@@ -11,9 +11,9 @@ const ITEMS: MoreItem[] = [
   { href: "/expenses",   label: "المصاريف",                icon: Receipt },
   { href: "/production", label: "الإنتاج والفاقد",          icon: Factory },
   { href: "/users",      label: "الموظفين",                 icon: UserCog },
-  { href: "/reports",    label: "التقارير (قريباً)",         icon: BarChart3,    disabled: true },
-  { href: "/inventory",  label: "الجرد (قريباً)",            icon: ClipboardList, disabled: true },
-  { href: "/export",     label: "تصدير (قريباً)",            icon: Download,      disabled: true },
+  { href: "/reports",    label: "التقارير",                 icon: BarChart3 },
+  { href: "/inventory",  label: "الجرد",                    icon: ClipboardList },
+  { href: "/export",     label: "تصدير",                    icon: Download },
   { href: "/ai",         label: "اسأل بياناتك (قريباً)",      icon: Sparkles,      disabled: true },
   { href: "/activity",   label: "الإشعارات (قريباً)",         icon: Bell,          disabled: true },
 ];
