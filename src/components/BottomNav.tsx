@@ -13,7 +13,7 @@ const items = [
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-border px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] z-40">
+    <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-border px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] z-40 print:hidden">
       <ul className="flex justify-around items-center max-w-md mx-auto">
         {items.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);

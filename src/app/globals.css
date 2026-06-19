@@ -12,3 +12,11 @@ body {
 
 /* English numerals even in RTL contexts (matters for amounts/accounting) */
 .lnum { font-feature-settings: "lnum"; font-variant-numeric: lining-nums; }
+
+/* Print-specific rules: tight margins, no global chrome, white background. */
+@media print {
+  body { background: #fff; }
+}
+@page {
+  margin: 1cm;
+}
