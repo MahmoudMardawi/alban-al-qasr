@@ -59,12 +59,17 @@ function renderHtml(brandName: string, brandArea: string, report: PrintableRepor
   }
   .toolbar {
     background: #eef6f0; color: #1a3d2b;
-    padding: 10px 14px; border-radius: 8px;
+    padding: 12px 14px; border-radius: 8px;
     margin-bottom: 16px;
-    font-size: 12px;
+    font-size: 12px; line-height: 1.9;
     border-right: 4px solid #2d8659;
   }
   .toolbar strong { color: #1a3d2b; }
+  .toolbar kbd {
+    background: white; border: 1px solid #d8e7d8;
+    border-radius: 4px; padding: 1px 5px;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+  }
   .header { text-align: center; border-bottom: 2px solid #d8e7d8; padding-bottom: 14px; margin-bottom: 18px; }
   .brand { font-family: 'Amiri', serif; font-size: 28px; color: #1a3d2b; line-height: 1.1; }
   .area  { font-size: 12px; color: #6b7d72; margin-top: 4px; }
@@ -98,8 +103,11 @@ function renderHtml(brandName: string, brandArea: string, report: PrintableRepor
 <body>
 <div class="container">
   <div class="toolbar">
-    📄 <strong>للحفظ كـ PDF:</strong> اضغط <strong>Ctrl+P</strong> ← اختر <em>"Save as PDF"</em>.
-    <br/>💡 في "More settings" قم بإلغاء <em>"Headers and footers"</em> لإزالة التاريخ والرابط من أعلى/أسفل الصفحة.
+    📄 <strong>للحفظ كـ PDF أو الطباعة:</strong>
+    <br/>💻 <strong>كمبيوتر:</strong> اضغط <kbd>Ctrl+P</kbd> ثم اختر <em>"Save as PDF"</em>.
+    <br/>📱 <strong>آيفون:</strong> زر المشاركة <span style="font-family:system-ui">⤴</span> ← <em>اطبع</em> ← قرّص بإصبعين على الصورة ← المشاركة ← <em>حفظ في الملفات</em>.
+    <br/>📱 <strong>أندرويد:</strong> القائمة <span style="font-family:system-ui">⋮</span> ← <em>مشاركة</em> ← <em>طباعة</em> ← اختر <em>"حفظ كـ PDF"</em>.
+    <br/>💡 في صندوق الطباعة، ألغِ <em>"Headers and footers"</em> لإزالة التاريخ والرابط من حواف الصفحة.
   </div>
   <div class="header">
     <div class="brand">${escapeHtml(brandName)}</div>
