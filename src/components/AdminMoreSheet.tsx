@@ -14,8 +14,8 @@ const ITEMS: MoreItem[] = [
   { href: "/reports",    label: "التقارير",                 icon: BarChart3 },
   { href: "/inventory",  label: "الجرد",                    icon: ClipboardList },
   { href: "/export",     label: "تصدير",                    icon: Download },
-  { href: "/ai",         label: "اسأل بياناتك (قريباً)",      icon: Sparkles,      disabled: true },
-  { href: "/activity",   label: "الإشعارات (قريباً)",         icon: Bell,          disabled: true },
+  { href: "/ai",         label: "اسأل بياناتك",             icon: Sparkles },
+  { href: "/activity",   label: "الإشعارات",                icon: Bell },
 ];
 
 export function AdminMoreSheet({ open, onClose }: Props) {
