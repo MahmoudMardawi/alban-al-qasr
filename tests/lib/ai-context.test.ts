@@ -21,15 +21,32 @@ describe("shapeContextForAI", () => {
     expect(out.top_products[0].name).toBe("لبن");
   });
 
-  it("truncates lists to top 5 for token economy", () => {
-    const many = Array.from({ length: 12 }, (_, i) => ({ name: `P${i}`, units: i, revenue: i * 10 }));
+  it("truncates lists to top 10 for token economy", () => {
+    const many = Array.from({ length: 15 }, (_, i) => ({ name: `P${i}`, units: i, revenue: i * 10 }));
     const out = shapeContextForAI({ ...raw, salesByProduct: many });
-    expect(out.top_products).toHaveLength(5);
+    expect(out.top_products).toHaveLength(10);
   });
 
   it("handles empty arrays", () => {
     const out = shapeContextForAI({ ...raw, returns: [], topClients: [] });
     expect(out.returns).toEqual([]);
     expect(out.top_clients).toEqual([]);
+  });
+
+  it("emits monthly_breakdown when monthlyHistory is provided", () => {
+    const out = shapeContextForAI({
+      ...raw,
+      monthlyHistory: [
+        { month: "2026-05", sales: 1000, expenses: 600, netProfit: 400 },
+        { month: "2026-06", sales: 1200, expenses: 700, netProfit: 500 },
+      ],
+    });
+    expect(out.monthly_breakdown).toHaveLength(2);
+    expect(out.monthly_breakdown![0]).toEqual({ month: "2026-05", sales: 1000, expenses: 600, net_profit: 400 });
+  });
+
+  it("omits monthly_breakdown when monthlyHistory is missing or empty", () => {
+    expect(shapeContextForAI(raw).monthly_breakdown).toBeUndefined();
+    expect(shapeContextForAI({ ...raw, monthlyHistory: [] }).monthly_breakdown).toBeUndefined();
   });
 });

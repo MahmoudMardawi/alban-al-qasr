@@ -4,6 +4,13 @@ export interface ClientBalance {
   replacement_debt: Array<{ product: string; units: number }>;
 }
 
+export interface MonthBucket {
+  month: string;          // e.g. "2026-06" — ISO YYYY-MM (locale-neutral)
+  sales: number;
+  expenses: number;
+  netProfit: number;
+}
+
 export interface RawAiData {
   periodLabel: string;
   sales: number;
@@ -14,6 +21,9 @@ export interface RawAiData {
   returns:        Array<{ product: string; units: number }>;
   expensesByCategory: Array<{ category: string; amount: number }>;
   clientBalances?: ClientBalance[];
+  // Last 12 months of {month, sales, expenses, netProfit}, oldest first.
+  // Enables month-over-month, year-over-year, and trend questions.
+  monthlyHistory?: MonthBucket[];
 }
 
 export interface AiContext {
@@ -25,6 +35,7 @@ export interface AiContext {
   expenses_by_category: Array<{ category: string; amount: number }>;
   clients_with_outstanding_balance?: ClientBalance[];
   total_outstanding_money?: number;
+  monthly_breakdown?: Array<{ month: string; sales: number; expenses: number; net_profit: number }>;
 }
 
 export function shapeContextForAI(raw: RawAiData): AiContext {
@@ -36,13 +47,21 @@ export function shapeContextForAI(raw: RawAiData): AiContext {
   return {
     period:      raw.periodLabel,
     totals:      { sales: raw.sales, expenses: raw.expenses, net_profit: raw.netProfit },
-    top_products: raw.salesByProduct.slice(0, 5),
-    top_clients:  raw.topClients.slice(0, 5),
+    top_products: raw.salesByProduct.slice(0, 10),
+    top_clients:  raw.topClients.slice(0, 10),
     returns:      raw.returns,
     expenses_by_category: raw.expensesByCategory,
     ...(balances.length > 0 ? {
       clients_with_outstanding_balance: sortedByDebt.slice(0, 10),
       total_outstanding_money: totalOutstanding,
+    } : {}),
+    ...(raw.monthlyHistory && raw.monthlyHistory.length > 0 ? {
+      monthly_breakdown: raw.monthlyHistory.map((m) => ({
+        month:      m.month,
+        sales:      m.sales,
+        expenses:   m.expenses,
+        net_profit: m.netProfit,
+      })),
     } : {}),
   };
 }
