@@ -529,6 +529,10 @@ export type Database = {
     }
     Functions: {
       auth_role: { Args: never; Returns: string }
+      fn_merge_clients: {
+        Args: { duplicate_ids: string[]; primary_id: string }
+        Returns: number
+      }
       is_admin: { Args: never; Returns: boolean }
       is_employee: { Args: never; Returns: boolean }
     }
