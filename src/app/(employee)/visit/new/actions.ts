@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity-log";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { DraftLine } from "@/lib/ledgers";
 
@@ -12,7 +11,12 @@ export interface CreateVisitInput {
   notes?: string | null;
 }
 
-export async function createVisitWithLines(input: CreateVisitInput) {
+export interface CreateVisitResult {
+  visitId?: string;
+  error?: string;
+}
+
+export async function createVisitWithLines(input: CreateVisitInput): Promise<CreateVisitResult> {
   if (!input.client_id) return { error: "زبون غير محدد" };
   if (!input.lines.length) return { error: "أضف عنصر واحد على الأقل" };
 
@@ -30,7 +34,9 @@ export async function createVisitWithLines(input: CreateVisitInput) {
     .select("id, client_id")
     .single();
 
-  if (visitErr || !visit) return { error: visitErr?.message ?? "تعذّر إنشاء الزيارة" };
+  if (visitErr || !visit) {
+    return { error: visitErr?.message ?? "تعذّر إنشاء الزيارة" };
+  }
 
   const linesPayload = input.lines.map((l) => ({
     visit_id:    visit.id,
@@ -63,5 +69,5 @@ export async function createVisitWithLines(input: CreateVisitInput) {
 
   revalidatePath("/");
   revalidatePath(`/client/${input.client_id}`);
-  redirect(`/visit/${visit.id}`);
+  return { visitId: visit.id };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useTransition, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Plus, RotateCcw, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -26,6 +26,7 @@ export default function NewVisitPage() {
 
 function NewVisitContent() {
   const sp = useSearchParams();
+  const router = useRouter();
   const clientId = sp.get("client") ?? "";
 
   const [client, setClient] = useState<ClientRow | null>(null);
@@ -129,8 +130,22 @@ function NewVisitContent() {
   function confirm() {
     setError(null);
     startSubmit(async () => {
-      const res = await createVisitWithLines({ client_id: clientId, lines });
-      if (res?.error) setError(res.error);
+      try {
+        const res = await createVisitWithLines({ client_id: clientId, lines });
+        if (res?.error) {
+          setError(res.error);
+          return;
+        }
+        if (res?.visitId) {
+          router.push(`/visit/${res.visitId}`);
+        } else {
+          setError("استجابة غير متوقعة من الخادم");
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "حدث خطأ غير متوقع";
+        setError(msg);
+        console.error("[createVisitWithLines] threw:", e);
+      }
     });
   }
 
