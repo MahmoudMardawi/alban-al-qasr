@@ -61,17 +61,52 @@ export function ClientEditForm({ initial }: { initial: ClientFormInitial }) {
         <input value={address} onChange={(e) => setAddress(e.target.value)}
           placeholder="مثال: عرّابة، الحارة الغربية مقابل صيدلية..."
           className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-ink focus:outline-none focus:ring-2 focus:ring-primary" />
-        {address.trim().length > 2 && (
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
-            target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary font-cairo font-semibold mt-1.5"
-          >
-            📍 افتح في خرائط Google
-          </a>
-        )}
-        <p className="text-[10px] text-muted font-cairo mt-1">
-          اكتب وصفاً نصّياً، أو لصق رابط Google Maps، أو إحداثيات (مثل: 32.4567, 35.1234).
+
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <button type="button"
+            onClick={() => {
+              // Open maps centered on the address text, or fall back to Arraba/Jenin (factory).
+              // The "search?api=1" URL launches the native Google Maps app on Android,
+              // Apple Maps prompt on iOS, or maps.google.com in any browser.
+              const query = address.trim() || "32.4083,35.2031 (مصنع ألبان وأجبان القصر)";
+              window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank");
+            }}
+            className="flex items-center justify-center gap-1.5 bg-info-bg text-primary-dk font-cairo font-semibold text-xs py-2.5 rounded-xl border border-border">
+            📍 افتح الخريطة
+          </button>
+          <button type="button"
+            onClick={() => {
+              if (!navigator.geolocation) {
+                alert("متصفحك لا يدعم تحديد الموقع.");
+                return;
+              }
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const lat = pos.coords.latitude.toFixed(6);
+                  const lng = pos.coords.longitude.toFixed(6);
+                  const coords = `${lat},${lng}`;
+                  setAddress(coords);
+                  window.open(`https://www.google.com/maps/search/?api=1&query=${coords}`, "_blank");
+                },
+                (err) => {
+                  const msg =
+                    err.code === err.PERMISSION_DENIED ? "رفض إذن الوصول للموقع."  :
+                    err.code === err.POSITION_UNAVAILABLE ? "تعذّر تحديد الموقع."  :
+                    err.code === err.TIMEOUT ? "انتهت مهلة التحديد."             :
+                    err.message;
+                  alert(`تعذّر الحصول على موقعك: ${msg}`);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+              );
+            }}
+            className="flex items-center justify-center gap-1.5 bg-primary text-white font-cairo font-semibold text-xs py-2.5 rounded-xl">
+            🎯 استخدم موقعي الحالي
+          </button>
+        </div>
+
+        <p className="text-[10px] text-muted font-cairo mt-1.5">
+          📍 يفتح خرائط Google. على الموبايل سيُحوّلك للتطبيق المثبّت (Google Maps على Android، Apple Maps على iOS).<br />
+          🎯 سيطلب منك إذن الوصول للموقع، ثم يضع إحداثياتك في الحقل.
         </p>
       </div>
       <div>

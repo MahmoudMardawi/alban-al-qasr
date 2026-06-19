@@ -28,25 +28,31 @@ function persistableMessages(msgs: ChatMsg[]): ChatMsg[] {
 
 export default function AiAssistant() {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [restored, setRestored] = useState(false);
   const [input, setInput]       = useState("");
   const [busy, setBusy]         = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Restore history on mount
+  // Restore history on mount FIRST
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") { setRestored(true); return; }
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setMessages(JSON.parse(saved));
+      if (saved) {
+        const parsed: ChatMsg[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) setMessages(parsed);
+      }
     } catch { /* ignore corrupt history */ }
+    setRestored(true);
   }, []);
 
-  // Persist on every change
+  // Persist on every change — but ONLY after restore has run.
+  // Otherwise the initial empty [] would overwrite saved history on mount.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!restored || typeof window === "undefined") return;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(persistableMessages(messages))); }
     catch { /* localStorage full / disabled */ }
-  }, [messages]);
+  }, [messages, restored]);
 
   async function send(textOverride?: string) {
     const question = (textOverride ?? input).trim();
