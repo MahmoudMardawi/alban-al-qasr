@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>دليل استخدام تطبيق ألبان وأجبان القصر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f4f9f4;
+    --primary: #2d8659;
+    --primary-dk: #1f6943;
+    --forest: #1a3d2b;
+    --ink: #1a2e1a;
+    --muted: #6b7d72;
+    --border: #d8e7d8;
+    --warn: #c96f2c;
+    --gold: #d4a55a;
+    --info-bg: #eef6f0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: #f7faf7;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  /* PRINT — let each .page own its own A4 size and break */
+  @page { size: A4; margin: 12mm 14mm; }
+  @media print {
+    body { background: #fff; }
+    .toolbar { display: none !important; }
+    .page { page-break-after: always; box-shadow: none !important; margin: 0 !important; padding: 18mm 12mm !important; }
+    .page:last-child { page-break-after: auto; }
+  }
+
+  /* SCREEN — show pages stacked like a book preview */
+  .toolbar {
+    position: fixed; top: 8px; left: 8px; z-index: 100;
+    background: var(--forest); color: white; padding: 8px 12px;
+    border-radius: 8px; font-size: 12px;
+  }
+  .toolbar a { color: var(--gold); text-decoration: none; margin-right: 6px; }
+
+  .page {
+    background: white;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 12px auto;
+    padding: 18mm 16mm;
+    box-shadow: 0 4px 18px rgba(26,62,43,0.10);
+  }
+
+  h1, h2, h3, h4 { font-family: 'Cairo', sans-serif; color: var(--forest); }
+  h1.brand { font-family: 'Amiri', serif; font-weight: 700; }
+
+  /* COVER */
+  .cover { text-align: center; padding-top: 60mm; }
+  .cover h1.brand { font-size: 56px; color: var(--forest); margin: 0; line-height: 1.1; }
+  .cover .area { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .cover .title { font-size: 28px; color: var(--ink); margin-top: 32px; font-weight: 700; }
+  .cover .subtitle { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .cover .version-box {
+    margin-top: 60px; display: inline-block;
+    border: 2px solid var(--border); border-radius: 12px;
+    padding: 18px 28px; font-size: 13px; color: var(--ink);
+  }
+  .cover .mark {
+    width: 140px; height: 140px;
+    margin: 0 auto 16px; display: block;
+  }
+
+  /* SECTION HEADER */
+  .section-header {
+    background: linear-gradient(180deg, var(--info-bg), white);
+    border-right: 6px solid var(--primary);
+    padding: 14px 18px; margin-bottom: 20px; border-radius: 6px;
+  }
+  .section-header .num { color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+  .section-header h2 { margin: 4px 0 0; font-size: 22px; }
+
+  /* STEP */
+  .step {
+    display: grid; grid-template-columns: 36px 1fr; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .step .num {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--primary); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px;
+  }
+  .step .body { font-size: 13px; line-height: 1.7; }
+  .step strong { color: var(--forest); }
+
+  /* TIP / CALLOUT */
+  .tip {
+    background: var(--info-bg); border-right: 4px solid var(--gold);
+    padding: 12px 16px; margin: 14px 0; border-radius: 4px;
+    font-size: 12px; color: var(--ink);
+  }
+  .tip strong { color: var(--forest); }
+  .warning {
+    background: #fdf2ed; border-right: 4px solid var(--warn);
+    padding: 12px 16px; margin: 14px 0; border-radius: 4px;
+    font-size: 12px;
+  }
+
+  /* PHONE MOCKUP */
+  .phone-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin: 16px 0; align-items: flex-start; }
+  .phone {
+    width: 220px;
+    height: 440px;
+    background: white;
+    border-radius: 24px;
+    border: 6px solid #e8efe9;
+    box-shadow: 0 8px 20px rgba(26,62,43,0.12);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .phone-caption {
+    text-align: center; font-size: 11px; color: var(--muted);
+    margin-top: 6px; max-width: 220px;
+  }
+  .phone .status {
+    height: 18px; font-size: 9px; background: #fff;
+    display: flex; justify-content: space-between; padding: 0 12px;
+    align-items: center; color: var(--ink); direction: ltr;
+  }
+  .phone .top {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #fff, var(--info-bg));
+    display: flex; align-items: center; gap: 6px;
+  }
+  .phone .top .mark-mini { width: 22px; height: 22px; }
+  .phone .top .brand-mini { font-family: 'Amiri', serif; font-weight: 700; color: var(--forest); font-size: 12px; }
+  .phone .top .sub { font-size: 8px; color: var(--muted); }
+  .phone .body { flex: 1; padding: 8px; overflow: hidden; font-size: 10px; }
+  .phone .nav {
+    height: 36px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around; align-items: center;
+    background: white; font-size: 8px; color: var(--muted);
+  }
+  .phone .nav .item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .phone .nav .item.active { color: var(--primary); font-weight: 700; }
+
+  /* MINI ELEMENTS */
+  .mock-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 8px; margin-bottom: 5px;
+    font-size: 9px;
+  }
+  .mock-badge {
+    display: inline-block;
+    padding: 2px 6px; border-radius: 6px;
+    font-size: 8px; font-weight: 700;
+    border: 1px solid;
+    margin-right: 3px;
+  }
+  .b-owe { background: #fdf2ed; color: var(--warn); border-color: #f7d5b8; }
+  .b-debt { background: var(--info-bg); color: var(--primary-dk); border-color: var(--border); }
+  .b-clear { background: var(--info-bg); color: var(--primary); border-color: var(--border); }
+
+  .mock-btn {
+    background: var(--primary); color: white;
+    border-radius: 8px; padding: 8px;
+    text-align: center; font-weight: 700;
+    font-size: 10px;
+    margin: 4px 0;
+  }
+  .three-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin: 6px 0; }
+  .three-btns .b {
+    border-radius: 6px; padding: 6px 4px;
+    font-weight: 700; font-size: 8px; text-align: center;
+    border: 1px solid;
+  }
+  .three-btns .sale { background: var(--primary); color: white; border-color: var(--primary); }
+  .three-btns .ret  { background: white; color: var(--warn); border-color: #f7d5b8; }
+  .three-btns .rep  { background: white; color: var(--primary-dk); border-color: var(--border); }
+
+  /* COLOR-CODED LINE */
+  .mock-line {
+    background: white; border: 1px solid var(--border);
+    border-right-width: 4px;
+    border-radius: 6px; padding: 4px 7px; margin-bottom: 3px;
+    font-size: 9px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mock-line.sale { border-right-color: var(--primary); }
+  .mock-line.ret  { border-right-color: var(--warn); }
+  .mock-line.rep  { border-right-color: var(--primary-dk); }
+
+  .mock-total {
+    background: var(--forest); color: white;
+    border-radius: 8px; padding: 6px 10px;
+    display: flex; justify-content: space-between;
+    font-size: 10px; font-weight: 700;
+    margin: 6px 0;
+  }
+  .mock-confirm {
+    background: var(--primary); color: white;
+    border-radius: 8px; padding: 8px;
+    text-align: center; font-weight: 700;
+    font-size: 10px;
+  }
+
+  .mock-bell {
+    display: inline-flex; align-items: center; gap: 2px;
+    background: var(--warn); color: white;
+    padding: 2px 6px; border-radius: 10px;
+    font-size: 9px; font-weight: 700;
+  }
+
+  /* CHAT BUBBLE */
+  .chat-msg { display: flex; margin-bottom: 4px; }
+  .chat-msg.user { justify-content: flex-start; }
+  .chat-msg.ai { justify-content: flex-end; }
+  .chat-msg .bubble {
+    max-width: 80%; padding: 5px 8px;
+    border-radius: 10px; font-size: 9px;
+  }
+  .chat-msg.user .bubble { background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+  .chat-msg.ai .bubble { background: white; color: var(--ink); border: 1px solid var(--border); border-bottom-left-radius: 2px; }
+
+  /* TOC */
+  .toc h3 { margin: 16px 0 6px; color: var(--forest); }
+  .toc ul { list-style: none; padding: 0; margin: 0; }
+  .toc li { padding: 4px 0; font-size: 13px; border-bottom: 1px dotted var(--border); display: flex; justify-content: space-between; }
+  .toc li:last-child { border-bottom: none; }
+
+  /* TABLES */
+  table.compare { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+  table.compare th, table.compare td { padding: 8px 10px; border: 1px solid var(--border); text-align: right; }
+  table.compare th { background: var(--info-bg); color: var(--forest); }
+
+  .footer-page {
+    text-align: center; color: var(--muted); font-size: 10px;
+    border-top: 1px solid var(--border); margin-top: 30px; padding-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  📄 لطباعة PDF: <strong>Ctrl+P</strong> → ألغِ "Headers and footers"
+</div>
+
+<!-- ============ COVER ============ -->
+<section class="page cover">
+  <img src="../public/brand/logo-stacked.svg" alt="ألبان وأجبان القصر" class="mark" onerror="this.src='../public/brand/mark.svg'">
+  <h1 class="brand">ألبان وأجبان القصر</h1>
+  <div class="area">عرّابة — جنين</div>
+  <div class="title">دليل استخدام التطبيق</div>
+  <div class="subtitle">لمجدي أبو جلبوش وموظفي التوزيع</div>
+  <div class="version-box">
+    الإصدار 1.0 · يونيو 2026<br>
+    <span style="color: var(--muted); font-size: 11px;">https://alban-al-gasr.netlify.app</span>
+  </div>
+</section>
+
+<!-- ============ TABLE OF CONTENTS ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">000</div><h2>المحتويات</h2></div>
+  <div class="toc">
+    <h3>أ. للبداية</h3>
+    <ul>
+      <li><span>1. عن التطبيق وكيفية الدخول</span><span>3</span></li>
+    </ul>
+
+    <h3>ب. للمدير (مجدي)</h3>
+    <ul>
+      <li><span>2. الرئيسية ولوحة التحكم</span><span>4</span></li>
+      <li><span>3. إدارة المنتجات والعبوات</span><span>5</span></li>
+      <li><span>4. إدارة الزبائن (موافقة، تعديل، دمج)</span><span>6</span></li>
+      <li><span>5. تسجيل المصاريف (بصور الفواتير)</span><span>7</span></li>
+      <li><span>6. تسجيل الإنتاج والفاقد</span><span>8</span></li>
+      <li><span>7. التقارير والجرد</span><span>9</span></li>
+      <li><span>8. تصدير CSV / PDF</span><span>10</span></li>
+      <li><span>9. المساعد الذكي (اسأل بياناتك)</span><span>11</span></li>
+      <li><span>10. جرس الإشعارات</span><span>12</span></li>
+    </ul>
+
+    <h3>ج. للموظف (سائق التوزيع)</h3>
+    <ul>
+      <li><span>11. الدخول وقائمة الزبائن</span><span>13</span></li>
+      <li><span>12. إضافة زبون جديد على الطريق</span><span>14</span></li>
+      <li><span>13. ⭐ تسجيل زيارة جديدة (الأزرار الثلاثة)</span><span>15</span></li>
+      <li><span>14. تأكيد الزيارة وطباعة الإيصال</span><span>16</span></li>
+    </ul>
+
+    <h3>د. أسئلة شائعة</h3>
+    <ul>
+      <li><span>15. الأسئلة الشائعة والنصائح</span><span>17</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ SECTION A.1 — Getting started ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم أ — الفصل 1</div><h2>عن التطبيق وكيفية الدخول</h2></div>
+
+  <p style="font-size: 13px;">
+    هذا التطبيق صُمّم خصيصاً لمصنع <strong>ألبان وأجبان القصر</strong> لتسهيل:
+  </p>
+  <ul style="font-size: 13px; line-height: 1.9;">
+    <li>تسجيل الزيارات والمبيعات والمرتجعات والبدل بوضوح تام (لا تخلط بعد اليوم!)</li>
+    <li>متابعة ديون كل زبون (مالياً وبالبضاعة)</li>
+    <li>حساب الأرباح، المصاريف، والفاقد بشكل تلقائي</li>
+    <li>الجرد الشهري والسنوي بضغطة زر</li>
+    <li>سؤال المساعد الذكي عن أي شيء بالعربية</li>
+  </ul>
+
+  <div class="tip">
+    <strong>أين التطبيق؟</strong><br>
+    افتح أي متصفح (Chrome, Safari, Firefox) واذهب إلى:<br>
+    <code style="background:#fff;padding:4px 8px;border-radius:4px;font-family:monospace;direction:ltr;display:inline-block;margin-top:4px;">https://alban-al-gasr.netlify.app</code><br>
+    <span style="font-size:11px;">يعمل على الموبايل واللاب توب — لا حاجة لتطبيق منفصل.</span>
+  </div>
+
+  <h3 style="margin-top: 24px;">شاشة الدخول</h3>
+  <div class="phone-row">
+    <div>
+      <div class="phone">
+        <div class="status"><span>9:42</span><span>92%</span></div>
+        <div style="flex:1; display:flex; align-items:center; justify-content:center; background: var(--info-bg);">
+          <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:14px 12px;width:80%;text-align:center;">
+            <img src="../public/brand/mark.svg" alt="" style="width:40px;height:40px;margin-bottom:6px;">
+            <div style="font-family:'Amiri',serif;font-weight:700;color:var(--forest);font-size:14px;">ألبان وأجبان القصر</div>
+            <div style="font-size:8px;color:var(--muted);">عرّابة — جنين</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;height:18px;margin-top:10px;font-size:9px;text-align:right;padding:3px 6px;color:var(--muted);">البريد الإلكتروني</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;height:18px;margin-top:5px;font-size:9px;text-align:right;padding:3px 6px;color:var(--muted);">••••••••</div>
+            <div style="background:var(--primary);color:white;border-radius:6px;padding:6px;margin-top:8px;font-weight:700;font-size:10px;">دخول</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption">شاشة الدخول — أدخل بريدك وكلمة المرور</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">1</div>
+    <div class="body">افتح الرابط في المتصفح.</div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <div class="body">أدخل <strong>البريد الإلكتروني</strong> (مثل: <code>majdi@alqasr.test</code>) و<strong>كلمة المرور</strong> التي أعطاها لك مهندس النظام.</div>
+  </div>
+  <div class="step">
+    <div class="num">3</div>
+    <div class="body">اضغط <strong>دخول</strong>. سيوجّهك التطبيق إما إلى لوحة التحكم (للمدير) أو إلى قائمة الزبائن (للموظف).</div>
+  </div>
+
+  <div class="warning">
+    <strong>⚠️ نصيحة أمنية:</strong> لا تشارك كلمة مرورك مع أحد. كل موظف يحتاج حسابه الخاص.
+  </div>
+
+  <div class="footer-page">صفحة 3 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.2 — Dashboard ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 2</div><h2>الرئيسية — لوحة التحكم</h2></div>
+  <p style="font-size:13px;">عند دخولك كمدير، ترى لوحة التحكم. هذه أول شاشة تظهر لك.</p>
+
+  <div class="phone-row">
+    <div>
+      <div class="phone">
+        <div class="status"><span>10:14</span><span>88%</span></div>
+        <div class="top">
+          <img class="mark-mini" src="../public/brand/mark.svg">
+          <div>
+            <div class="brand-mini">ألبان وأجبان القصر</div>
+            <div class="sub">مرحباً مجدي · المدير</div>
+          </div>
+          <div style="margin-right:auto;"><span class="mock-bell">🔔 3</span></div>
+        </div>
+        <div class="body" style="font-size:8px;">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:5px;">
+            <div style="background:var(--primary);color:white;padding:3px;border-radius:3px;text-align:center;font-weight:700;">شهري</div>
+            <div style="background:white;border:1px solid var(--border);padding:3px;text-align:center;color:var(--muted);">يومي</div>
+            <div style="background:white;border:1px solid var(--border);padding:3px;text-align:center;color:var(--muted);">أسبوعي</div>
+            <div style="background:white;border:1px solid var(--border);padding:3px;text-align:center;color:var(--muted);">سنوي</div>
+          </div>
+          <div style="background:linear-gradient(135deg,var(--forest),var(--primary-dk));color:white;padding:6px;border-radius:6px;margin-bottom:4px;">
+            <div style="font-size:7px;opacity:0.8;">💰 صافي الربح هذا الشهر</div>
+            <div style="font-size:14px;font-weight:800;">3,840 ₪</div>
+            <div style="font-size:7px;">▲ 12% مقارنة بالشهر السابق</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+            <div class="mock-card">📈 المبيعات<br><strong>9,250 ₪</strong></div>
+            <div class="mock-card">💸 المصاريف<br><strong>5,410 ₪</strong></div>
+          </div>
+          <div style="font-size:7px;color:var(--muted);margin-top:5px;">📈 المبيعات اليومية</div>
+          <div style="background:white;border:1px solid var(--border);height:30px;border-radius:4px;padding:4px;">
+            <svg viewBox="0 0 100 20" preserveAspectRatio="none" style="width:100%;height:100%;">
+              <path d="M0,15 L20,12 L40,8 L60,10 L80,5 L100,2" stroke="var(--primary)" fill="none" stroke-width="1"/>
+            </svg>
+          </div>
+        </div>
+        <div class="nav">
+          <div class="item active">📊<br>الرئيسية</div>
+          <div class="item">👥<br>الزبائن</div>
+          <div class="item">📦<br>المنتجات</div>
+          <div class="item">⋯<br>المزيد</div>
+        </div>
+      </div>
+      <div class="phone-caption">لوحة التحكم — أرقامك كلها بضغطة زر</div>
+    </div>
+  </div>
+
+  <h3>ماذا ترى هنا؟</h3>
+  <div class="step"><div class="num">A</div><div class="body"><strong>أزرار الفترة الزمنية</strong> (يومي/أسبوعي/شهري/سنوي): اضغط أيها لتغيير الإحصائيات.</div></div>
+  <div class="step"><div class="num">B</div><div class="body"><strong>صافي الربح</strong> — الرقم الكبير الأخضر. مع نسبة التغيّر عن الفترة السابقة.</div></div>
+  <div class="step"><div class="num">C</div><div class="body"><strong>المبيعات والمصاريف</strong> — أرقام مستقلة.</div></div>
+  <div class="step"><div class="num">D</div><div class="body"><strong>الرسم البياني</strong> — حركة المبيعات يوم بيوم.</div></div>
+  <div class="step"><div class="num">E</div><div class="body"><strong>أفضل الزبائن والمنتجات</strong> — قائمة بأعلى 5 لكل منهما.</div></div>
+
+  <div class="footer-page">صفحة 4 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.3 — Products ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 3</div><h2>إدارة المنتجات والعبوات</h2></div>
+  <p style="font-size:13px;">من هنا تضيف منتجاتك (لبن، لبنة، جبنة...) مع تحديد الوحدة والسعر، وتعرّف العبوات المختلفة (كرتونة، علبة كبيرة...).</p>
+
+  <div class="tip">
+    <strong>مفهوم العبوات:</strong> كل منتج له <strong>وحدة أساسية</strong> (لتر، كيلو، قطعة). يمكنك بيعه بالوحدة المفردة، أو بعبوات (مثلاً: كرتونة 24 لتر بسعر 110 ₪ بدلاً من 24×5=120). الموظف يختار الشكل الذي يبيعه.
+  </div>
+
+  <h3>الخطوات</h3>
+  <div class="step"><div class="num">1</div><div class="body">من الشريط السفلي اضغط <strong>المنتجات</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">لإضافة منتج جديد: اضغط <strong>+ منتج جديد</strong>. املأ:
+    <ul style="margin:6px 0;font-size:12px;">
+      <li>الاسم (مثل: لبن)</li>
+      <li>الوحدة (لتر / كيلو / قطعة)</li>
+      <li>السعر للوحدة (مثل: 5 ₪ للتر)</li>
+      <li>التكلفة (اختياري — يُستخدم لحساب الربح)</li>
+    </ul>
+  </div></div>
+  <div class="step"><div class="num">3</div><div class="body"><strong>إضافة عبوة:</strong> تحت قائمة العبوات اضغط <strong>+ إضافة عبوة</strong>. أدخل: الاسم (كرتونة)، كم وحدة تحتوي (24)، السعر للعبوة كاملة (110 ₪).</div></div>
+  <div class="step"><div class="num">4</div><div class="body">اضغط <strong>إضافة المنتج</strong>. سيظهر المنتج فوراً للموظفين عند تسجيل الزيارات.</div></div>
+
+  <h3>لتعديل أو حذف منتج</h3>
+  <div class="step"><div class="num">1</div><div class="body">اضغط على المنتج في القائمة. تظهر شاشة التعديل.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">عدّل السعر، الاسم، أو العبوات. اضغط <strong>حفظ التغييرات</strong>.</div></div>
+  <div class="step"><div class="num">3</div><div class="body">لتعطيل المنتج (دون حذف): أزِل علامة "فعّال". لن يظهر للموظفين لكن يبقى في التاريخ.</div></div>
+
+  <div class="warning">
+    <strong>⚠️ تنبيه:</strong> إذا غيّرت سعر منتج، الزيارات السابقة تحتفظ بالسعر القديم. التغيير يطبّق على الزيارات الجديدة فقط.
+  </div>
+
+  <div class="footer-page">صفحة 5 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.4 — Clients ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 4</div><h2>إدارة الزبائن (موافقة، تعديل، دمج)</h2></div>
+
+  <h3>إضافة زبون جديد (بنفسك)</h3>
+  <div class="step"><div class="num">1</div><div class="body">من الشريط السفلي → <strong>الزبائن</strong> → <strong>+ زبون جديد</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">املأ الاسم، النوع (سوبر ماركت / محل / فرد)، الهاتف، العنوان، وملاحظات. اضغط حفظ.</div></div>
+
+  <h3>الموافقة على زبائن أضافهم الموظفون</h3>
+  <div class="tip">
+    عندما يضيف موظف زبوناً جديداً وهو على الطريق، يظهر عندك في القسم العلوي بعنوان <strong>"بانتظار الموافقة"</strong>. هذا الزبون يعمل فعلياً (يمكن تسجيل زيارات له) لكن يبقى مميزاً حتى تعتمده.
+  </div>
+  <div class="step"><div class="num">1</div><div class="body">من قائمة الزبائن، انظر إلى القسم الأصفر في الأعلى.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">لكل زبون فيه ثلاثة أزرار:
+    <ul style="margin:6px 0;font-size:12px;">
+      <li><strong>موافقة</strong> — يصبح زبوناً عادياً.</li>
+      <li><strong>تعديل</strong> — لتصحيح الاسم أو إضافة معلومات.</li>
+      <li><strong>حذف</strong> — يُحذف نهائياً (فقط إذا لم يكن له زيارات بعد).</li>
+    </ul>
+  </div></div>
+
+  <h3>دمج زبائن مكررين</h3>
+  <div class="warning">
+    <strong>مشكلة شائعة:</strong> أحياناً يضيف الموظف زبوناً موجوداً مسبقاً (بالخطأ أو لأنه لم يجده). الدمج يحل هذا.
+  </div>
+  <div class="step"><div class="num">1</div><div class="body">من قائمة الزبائن → اضغط <strong>دمج</strong> (الزر العلوي).</div></div>
+  <div class="step"><div class="num">2</div><div class="body">اختر <strong>الزبون الرئيسي</strong> (الذي ستبقي عليه).</div></div>
+  <div class="step"><div class="num">3</div><div class="body">حدّد <strong>الزبائن المكررين</strong> (الذين ستندمج بياناتهم في الرئيسي).</div></div>
+  <div class="step"><div class="num">4</div><div class="body">سترى <strong>معاينة</strong>: مجموع الديون، عدد الزيارات، البدل المستحق بعد الدمج.</div></div>
+  <div class="step"><div class="num">5</div><div class="body">اضغط <strong>دمج</strong>. كل الزيارات والمدفوعات تنتقل للرئيسي. المكررون يختفون من القائمة (لكن التاريخ محفوظ — لن يُفقد شيء).</div></div>
+
+  <div class="footer-page">صفحة 6 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.5 — Expenses ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 5</div><h2>تسجيل المصاريف (بصور الفواتير)</h2></div>
+  <p style="font-size:13px;">المصاريف تشمل: وقود، رواتب، إيجار، حليب خام، أخرى. كل مصروف يحسب تلقائياً ضمن صافي الربح.</p>
+
+  <h3>إضافة مصروف يدوياً</h3>
+  <div class="step"><div class="num">1</div><div class="body">من <strong>المزيد</strong> → <strong>المصاريف</strong> → <strong>+ مصروف جديد</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">اختر التصنيف، أدخل المبلغ بالشيكل، اختر التاريخ، أضف ملاحظة (اختياري).</div></div>
+  <div class="step"><div class="num">3</div><div class="body">اضغط <strong>إرفاق صورة الفاتورة</strong> لرفع صورة من الكاميرا أو الجاليري (اختياري لكن مفيد للتدقيق).</div></div>
+  <div class="step"><div class="num">4</div><div class="body">اضغط <strong>حفظ المصروف</strong>.</div></div>
+
+  <div class="tip">
+    <strong>💡 الطريقة الأسرع:</strong> استخدم المساعد الذكي (الفصل 9). فقط صوّر الفاتورة في شاشة "اسأل بياناتك" — يقرأ المبلغ والتصنيف تلقائياً ويسجّل المصروف.
+  </div>
+
+  <div class="footer-page">صفحة 7 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.6 — Production ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 6</div><h2>تسجيل الإنتاج والفاقد</h2></div>
+  <p style="font-size:13px;">سجّل كل يوم ما أنتجته من كل منتج، وما تلف منه. التطبيق يستخدم هذا لحساب رصيد المخزون (الجرد).</p>
+
+  <h3>الخطوات</h3>
+  <div class="step"><div class="num">1</div><div class="body">من <strong>المزيد</strong> → <strong>الإنتاج والفاقد</strong> → <strong>+ تسجيل جديد</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">اختر المنتج (مثل: لبن).</div></div>
+  <div class="step"><div class="num">3</div><div class="body">أدخل <strong>الكمية المنتجة</strong> (مثلاً: 50 لتر).</div></div>
+  <div class="step"><div class="num">4</div><div class="body">أدخل <strong>الفاقد</strong> إن وُجد (مثلاً: 2 لتر فسدت أو انسكبت).</div></div>
+  <div class="step"><div class="num">5</div><div class="body">اضغط <strong>حفظ</strong>.</div></div>
+
+  <div class="warning">
+    التطبيق يمنعك من إدخال فاقد أكبر من الإنتاج — رسالة خطأ بسيطة.
+  </div>
+
+  <div class="footer-page">صفحة 8 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.7 — Reports + Inventory ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 7</div><h2>التقارير والجرد</h2></div>
+
+  <h3>التقارير</h3>
+  <p style="font-size:13px;">للبحث في الزيارات السابقة بمعايير محددة.</p>
+  <div class="step"><div class="num">1</div><div class="body">من <strong>المزيد</strong> → <strong>التقارير</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">حدّد <strong>التاريخ</strong> (من/إلى).</div></div>
+  <div class="step"><div class="num">3</div><div class="body">اختر فلاتر اختيارية: زبون معين، منتج معين، موظف معين.</div></div>
+  <div class="step"><div class="num">4</div><div class="body">اضغط <strong>تطبيق الفلاتر</strong>. ترى قائمة الزيارات والمجاميع.</div></div>
+
+  <h3>الجرد (الإقفال الدوري)</h3>
+  <p style="font-size:13px;">لمعرفة رصيد كل منتج (افتتاح → إنتاج → بيع → فاقد → إقفال).</p>
+  <div class="step"><div class="num">1</div><div class="body">من <strong>المزيد</strong> → <strong>الجرد</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">اختر الفترة (أسبوعي / شهري / سنوي).</div></div>
+  <div class="step"><div class="num">3</div><div class="body">لكل منتج ترى:
+    <table class="compare">
+      <tr><td>رصيد الافتتاح</td><td>ما كان موجوداً قبل بداية الفترة</td></tr>
+      <tr><td>+ إنتاج</td><td>ما أنتجته خلال الفترة</td></tr>
+      <tr><td>− مبيعات</td><td>ما بِعته</td></tr>
+      <tr><td>− بدل</td><td>ما أعطيته مجاناً كتعويض</td></tr>
+      <tr><td>− فاقد</td><td>ما تلف</td></tr>
+      <tr><td><strong>= رصيد الإقفال</strong></td><td><strong>ما يجب أن يكون في المخزن الآن</strong></td></tr>
+    </table>
+  </div></div>
+
+  <div class="footer-page">صفحة 9 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.8 — Export ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 8</div><h2>تصدير التقارير (CSV / PDF)</h2></div>
+  <p style="font-size:13px;">يمكنك تنزيل أي تقرير كملف CSV (للإكسل وحسابات دحبور) أو PDF (للطباعة والمشاركة).</p>
+
+  <h3>الخطوات</h3>
+  <div class="step"><div class="num">1</div><div class="body">من <strong>المزيد</strong> → <strong>تصدير</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">اختر نوع التقرير: المبيعات / المصاريف / الإنتاج والفاقد.</div></div>
+  <div class="step"><div class="num">3</div><div class="body">حدّد <strong>الفترة</strong> (من / إلى).</div></div>
+  <div class="step"><div class="num">4</div><div class="body">اضغط <strong>تحميل CSV</strong> أو <strong>تحميل PDF</strong>.</div></div>
+  <div class="step"><div class="num">5</div><div class="body">الملف ينزل إلى جهازك. للهاتف: يظهر في "التنزيلات". للكومبيوتر: في مجلد Downloads.</div></div>
+
+  <div class="tip">
+    <strong>للمحاسب (أحمد دحبور):</strong> أرسل له ملف CSV عبر الواتساب أو الإيميل. سيفتحه مباشرة في Excel — العربية ستظهر صحيحة.
+  </div>
+
+  <div class="footer-page">صفحة 10 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.9 — AI Assistant ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 9</div><h2>المساعد الذكي (اسأل بياناتك) ⭐</h2></div>
+  <p style="font-size:13px;">تسأل بالعربية، يجيب بالعربية. يستخدم بياناتك الفعلية. مدعوم بـ Gemini من Google — مجاناً.</p>
+
+  <div class="phone-row">
+    <div>
+      <div class="phone">
+        <div class="status"><span>10:22</span><span>87%</span></div>
+        <div style="background:linear-gradient(135deg,var(--forest),var(--primary-dk));color:white;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:5px;"><span>✨</span><div><div style="font-size:10px;font-weight:700;">اسأل بياناتك</div><div style="font-size:7px;opacity:0.8;">مدعوم بـ Gemini</div></div></div>
+          <span style="font-size:8px;background:rgba(255,255,255,0.15);padding:2px 6px;border-radius:6px;">↻</span>
+        </div>
+        <div class="body" style="background:var(--surface);padding:6px;font-size:9px;">
+          <div class="chat-msg user"><div class="bubble">كم بعت لبن هذا الشهر؟</div></div>
+          <div class="chat-msg ai"><div class="bubble">بعت <strong>247 لتر</strong> لبن خلال آخر شهر بإجمالي <strong>1,235 ₪</strong>. ارتفاع 18% عن الشهر السابق 📈</div></div>
+          <div class="chat-msg user"><div class="bubble">📷 صورة فاتورة وقود</div></div>
+          <div class="chat-msg ai"><div class="bubble">✓ تم. أضفت <strong>185 ₪ وقود</strong> ضمن مصاريف اليوم.</div></div>
+        </div>
+        <div style="background:white;border-top:1px solid var(--border);padding:5px;">
+          <div style="display:flex;gap:4px;overflow:hidden;font-size:7px;">
+            <span style="background:var(--info-bg);color:var(--primary-dk);padding:3px 6px;border-radius:8px;border:1px solid var(--border);">كم ربحت اليوم؟</span>
+            <span style="background:var(--info-bg);color:var(--primary-dk);padding:3px 6px;border-radius:8px;border:1px solid var(--border);">أكثر مرتجع</span>
+          </div>
+          <div style="display:flex;gap:3px;margin-top:5px;align-items:center;">
+            <span style="width:18px;height:18px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:8px;">📷</span>
+            <span style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px 6px;font-size:8px;color:var(--muted);">اكتب سؤالك...</span>
+            <span style="width:18px;height:18px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:8px;">➤</span>
+          </div>
+        </div>
+      </div>
+      <div class="phone-caption">المساعد الذكي — اسأل بأي لغة، يجيب بالعربية</div>
+    </div>
+  </div>
+
+  <h3>كيف تستخدمه</h3>
+  <div class="step"><div class="num">1</div><div class="body">من <strong>المزيد</strong> → <strong>اسأل بياناتك</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">اكتب سؤالك في الأسفل (مثل: "كم بعت اليوم؟"، "أي زبون أكثر دين؟").</div></div>
+  <div class="step"><div class="num">3</div><div class="body">أو اضغط أحد <strong>الاقتراحات الجاهزة</strong> فوق صندوق الكتابة.</div></div>
+  <div class="step"><div class="num">4</div><div class="body">اضغط <strong>➤</strong> أو Enter — يصلك الجواب خلال 2-3 ثوان.</div></div>
+
+  <h3>الحيلة الذكية: تصوير الفاتورة</h3>
+  <div class="step"><div class="num">1</div><div class="body">اضغط زر <strong>📷</strong> (الكاميرا).</div></div>
+  <div class="step"><div class="num">2</div><div class="body">صوّر الفاتورة (وقود، أو أي مصروف) — أو اختر صورة محفوظة.</div></div>
+  <div class="step"><div class="num">3</div><div class="body">المساعد <strong>يقرأ المبلغ والتصنيف</strong> ويسجّل المصروف تلقائياً. توفّر عليك الكتابة اليدوية!</div></div>
+
+  <div class="tip">
+    <strong>أمثلة أسئلة:</strong>
+    <ul style="margin:4px 0;font-size:11px;line-height:1.7;">
+      <li>كم بعت لبنة الأسبوع الماضي؟</li>
+      <li>أي زبون عنده أعلى ديون؟</li>
+      <li>ما أكثر منتج رجّعه الزبائن؟</li>
+      <li>قارن أرباح هذا الشهر بالشهر السابق</li>
+      <li>كم خسرت من فاقد هذا الأسبوع؟</li>
+    </ul>
+  </div>
+
+  <div class="footer-page">صفحة 11 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ B.10 — Notification Bell ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم ب — الفصل 10</div><h2>جرس الإشعارات 🔔</h2></div>
+  <p style="font-size:13px;">في أعلى كل شاشة من شاشاتك (كمدير) ترى جرساً صغيراً. الرقم البرتقالي بجانبه = عدد الإشعارات التي لم تقرأها بعد.</p>
+
+  <h3>ما الذي يولّد إشعاراً؟</h3>
+  <ul style="font-size:13px;line-height:1.9;">
+    <li>كلما <strong>سجّل موظف زيارة جديدة</strong></li>
+    <li>كلما <strong>أضاف موظف زبوناً جديداً</strong> (يحتاج موافقتك)</li>
+    <li>كلما <strong>أُضيف مصروف</strong></li>
+    <li>كلما <strong>سُجِّل إنتاج جديد</strong></li>
+    <li>كلما <strong>دُمج زبائن</strong></li>
+  </ul>
+
+  <div class="tip">
+    <strong>⚡ تحديث فوري:</strong> الرقم على الجرس يتحدّث <strong>تلقائياً خلال ثانيتين</strong> من لحظة قيام الموظف بأي شيء. لست بحاجة لإعادة تحميل الصفحة.
+  </div>
+
+  <h3>عرض الإشعارات</h3>
+  <div class="step"><div class="num">1</div><div class="body">اضغط على الجرس 🔔 — تنتقل إلى صفحة الإشعارات.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">في الأعلى ترى <strong>الزبائن بانتظار الموافقة</strong> (إن وُجدوا).</div></div>
+  <div class="step"><div class="num">3</div><div class="body">تحتها <strong>سجل النشاط</strong> الكامل، مرتب من الأحدث.</div></div>
+  <div class="step"><div class="num">4</div><div class="body">يمكنك تصفية بالفاعل (موظف معين) أو نوع الإجراء.</div></div>
+  <div class="step"><div class="num">5</div><div class="body">لإفراغ العداد: اضغط <strong>وضع الكل كمقروء</strong>.</div></div>
+
+  <div class="footer-page">صفحة 12 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ C.11 — Driver: Home ============ -->
+<section class="page">
+  <div class="section-header" style="border-right-color:var(--gold);"><div class="num">القسم ج — الفصل 11</div><h2>للموظف: الدخول وقائمة الزبائن</h2></div>
+  <p style="font-size:13px;">إذا دخلت كموظف توزيع، أول ما تراه هو قائمة الزبائن مع <strong>تنبيهات الحساب</strong> لكل واحد.</p>
+
+  <div class="phone-row">
+    <div>
+      <div class="phone">
+        <div class="status"><span>9:42</span><span>92%</span></div>
+        <div class="top">
+          <img class="mark-mini" src="../public/brand/mark.svg">
+          <div>
+            <div class="brand-mini">ألبان وأجبان القصر</div>
+            <div class="sub">مرحباً أحمد · موظف توزيع</div>
+          </div>
+        </div>
+        <div class="body">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--muted);font-size:9px;margin-bottom:4px;">🔍 ابحث عن زبون...</div>
+          <div class="mock-card">
+            <strong>سوبر ماركت الأخوة</strong><br>
+            <span class="mock-badge b-owe">💰 85 ₪</span>
+            <span class="mock-badge b-debt">🥛 3 لتر لبن</span>
+          </div>
+          <div class="mock-card">
+            <strong>محلات أبو خالد</strong><br>
+            <span class="mock-badge b-owe">💰 240 ₪</span>
+          </div>
+          <div class="mock-card">
+            <strong>بقالة النور</strong><br>
+            <span class="mock-badge b-debt">🥛 2 ك جبنة</span>
+          </div>
+          <div class="mock-card">
+            <strong>سامي العتيلي</strong><br>
+            <span class="mock-badge b-clear">✓ مسوّى</span>
+          </div>
+        </div>
+        <div class="nav">
+          <div class="item active">🏠<br>الزبائن</div>
+          <div class="item">📋<br>زياراتي</div>
+          <div class="item">👤<br>حسابي</div>
+        </div>
+      </div>
+      <div class="phone-caption">شاشة الزبائن للموظف — كل زبون مع تنبيهات حسابه</div>
+    </div>
+  </div>
+
+  <h3>قراءة التنبيهات</h3>
+  <table class="compare">
+    <tr><th>التنبيه</th><th>المعنى</th></tr>
+    <tr><td><span class="mock-badge b-owe">💰 مبلغ</span></td><td>هذا الزبون يدين لك بالمبلغ المذكور — اطلب الدفع.</td></tr>
+    <tr><td><span class="mock-badge b-debt">🥛 كمية</span></td><td>أنت تدين لهذا الزبون بكمية بدل (تعويض عن مرتجع سابق).</td></tr>
+    <tr><td><span class="mock-badge b-clear">✓ مسوّى</span></td><td>الحساب نظيف — لا ديون ولا بدل مستحق.</td></tr>
+  </table>
+
+  <div class="footer-page">صفحة 13 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ C.12 — Driver: Add new client ============ -->
+<section class="page">
+  <div class="section-header" style="border-right-color:var(--gold);"><div class="num">القسم ج — الفصل 12</div><h2>إضافة زبون جديد على الطريق</h2></div>
+  <p style="font-size:13px;">إذا قابلت محلاً جديداً يريد أن يبدأ الطلب منك، لا تحتاج للاتصال بمجدي. أضفه بنفسك من التطبيق.</p>
+
+  <div class="step"><div class="num">1</div><div class="body">من قائمة الزبائن، في الأعلى يميناً، اضغط <strong>+ زبون جديد</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">املأ:
+    <ul style="margin:6px 0;font-size:12px;">
+      <li><strong>الاسم</strong> (مثل: محلات الفجر) — مطلوب</li>
+      <li><strong>الهاتف</strong> (اختياري)</li>
+      <li><strong>النوع</strong> (سوبر ماركت / محل / فرد)</li>
+    </ul>
+  </div></div>
+  <div class="step"><div class="num">3</div><div class="body">اضغط <strong>إضافة الزبون</strong>. ينتقل بك التطبيق إلى صفحته مباشرة.</div></div>
+  <div class="step"><div class="num">4</div><div class="body">سيظهر بشارة <strong>"بانتظار الموافقة"</strong> صفراء بجانب الاسم. هذا طبيعي — مجدي سيراجعه ويوافق لاحقاً.</div></div>
+  <div class="step"><div class="num">5</div><div class="body">يمكنك تسجيل زيارة له <strong>فوراً</strong> دون انتظار الموافقة.</div></div>
+
+  <div class="tip">
+    <strong>💡 نصيحة:</strong> اكتب الاسم كاملاً وواضحاً (مثل "محلات أبو فادي - بلاطة" بدلاً من "أبو فادي" فقط) ليسهل على مجدي تمييزه عن المحلات المشابهة.
+  </div>
+
+  <div class="footer-page">صفحة 14 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ C.13 — THE 3-BUTTON MAGIC ============ -->
+<section class="page">
+  <div class="section-header" style="border-right-color:var(--gold);"><div class="num">القسم ج — الفصل 13 ⭐</div><h2>تسجيل زيارة جديدة (الأزرار الثلاثة)</h2></div>
+  <p style="font-size:13px;"><strong>هذا الفصل الأهم</strong> — يحل مشكلة "تختلط عليّ الأمور بين البيع والمرتجع والبدل".</p>
+
+  <div class="phone-row">
+    <div>
+      <div class="phone">
+        <div class="status"><span>9:48</span><span>92%</span></div>
+        <div style="background:linear-gradient(135deg,var(--forest),var(--primary-dk));color:white;padding:8px 10px;">
+          <div style="font-size:8px;opacity:0.8;">← رجوع</div>
+          <div style="font-weight:700;font-size:12px;">سوبر ماركت الأخوة</div>
+        </div>
+        <div style="background:var(--info-bg);padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+          <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:4px;">
+            <div style="font-size:7px;color:var(--muted);">💰 يدين لك</div>
+            <div style="font-weight:700;color:var(--warn);font-size:11px;">85 ₪</div>
+          </div>
+          <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:4px;">
+            <div style="font-size:7px;color:var(--muted);">🥛 تدين له</div>
+            <div style="font-weight:700;color:var(--primary-dk);font-size:11px;">3 لتر لبن</div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="three-btns">
+            <div class="b sale">+ بيع جديد</div>
+            <div class="b ret">↩ مرتجع</div>
+            <div class="b rep">🔄 بدل</div>
+          </div>
+          <div style="font-size:8px;color:var(--muted);margin-top:6px;">عناصر الزيارة</div>
+          <div class="mock-line rep">
+            <div><strong>🔄 لبن — 3 لتر</strong><br><span style="color:var(--muted);font-size:7px;">بدل</span></div>
+            <div style="color:var(--primary-dk);font-size:8px;">بدون مقابل</div>
+          </div>
+          <div class="mock-line sale">
+            <div><strong>+ لبن — 7 لتر</strong><br><span style="color:var(--muted);font-size:7px;">بيع</span></div>
+            <div style="font-weight:700;">35 ₪</div>
+          </div>
+          <div class="mock-line sale">
+            <div><strong>+ لبنة — 2 كيلو</strong><br><span style="color:var(--muted);font-size:7px;">بيع</span></div>
+            <div style="font-weight:700;">36 ₪</div>
+          </div>
+          <div class="mock-total">
+            <span>المطلوب الآن</span><span>71 ₪</span>
+          </div>
+          <div class="mock-confirm">✓ تأكيد الزيارة</div>
+        </div>
+      </div>
+      <div class="phone-caption">شاشة الزيارة الجديدة — ثلاثة أزرار تحل كل التداخل</div>
+    </div>
+  </div>
+
+  <h3>الأزرار الثلاثة — متى تستخدم أي زر؟</h3>
+  <table class="compare">
+    <tr><th>الزر</th><th>اللون</th><th>متى</th></tr>
+    <tr>
+      <td><strong style="color:var(--primary);">+ بيع جديد</strong></td>
+      <td>أخضر</td>
+      <td>بضاعة جديدة تبيعها وتأخذ مقابلها (السعر يضاف للمطلوب).</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--warn);">↩ مرتجع</strong></td>
+      <td>برتقالي</td>
+      <td>بضاعة تالفة/منتهية يعيدها الزبون. لا تأخذ مالاً، لكن <strong>تصبح ديناً عليك للزبون</strong>.</td>
+    </tr>
+    <tr>
+      <td><strong style="color:var(--primary-dk);">🔄 بدل</strong></td>
+      <td>أخضر داكن</td>
+      <td>بضاعة تعطيها <strong>بدون مقابل</strong> لتعويض مرتجع سابق. يقلل دينك للزبون.</td>
+    </tr>
+  </table>
+
+  <div class="footer-page">صفحة 15 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ C.14 — Confirm + Receipt ============ -->
+<section class="page">
+  <div class="section-header" style="border-right-color:var(--gold);"><div class="num">القسم ج — الفصل 14</div><h2>تأكيد الزيارة وطباعة الإيصال</h2></div>
+
+  <h3>سيناريو حقيقي: مثال خطوة بخطوة</h3>
+  <div class="tip">
+    <strong>الموقف:</strong> سوبر ماركت الأخوة عنده 3 لتر لبن تالف. أنت توصّله اليوم طلب جديد: 7 لتر لبن + 2 كيلو لبنة. وتعطيه 3 لتر بدل تالف.
+  </div>
+
+  <div class="step"><div class="num">1</div><div class="body">افتح بطاقة الزبون → اضغط <strong>+ زيارة جديدة</strong>.</div></div>
+  <div class="step"><div class="num">2</div><div class="body"><strong>اضغط 🔄 بدل</strong> → اختر لبن → "لتر مفرد" → الكمية 3 → "إضافة". تظهر سطر "بدون مقابل".</div></div>
+  <div class="step"><div class="num">3</div><div class="body"><strong>اضغط + بيع جديد</strong> → اختر لبن → "لتر مفرد" → الكمية 7 → "إضافة". تظهر بسعر 35 ₪.</div></div>
+  <div class="step"><div class="num">4</div><div class="body"><strong>اضغط + بيع جديد</strong> مرة أخرى → اختر لبنة → "كيلو مفرد" → الكمية 2 → "إضافة". تظهر بسعر 36 ₪.</div></div>
+  <div class="step"><div class="num">5</div><div class="body">في الأسفل ترى <strong>المطلوب تحصيله الآن = 71 ₪</strong> (35 + 36، البدل بدون مقابل).</div></div>
+  <div class="step"><div class="num">6</div><div class="body">اضغط <strong>✓ تأكيد الزيارة</strong>. ينقلك إلى الإيصال.</div></div>
+
+  <h3>طباعة الإيصال أو حفظه</h3>
+  <div class="step"><div class="num">1</div><div class="body">من شاشة الإيصال، اضغط <strong>🖨️ طباعة</strong> في الأعلى.</div></div>
+  <div class="step"><div class="num">2</div><div class="body">يفتح المتصفح صندوق الطباعة. اختر طابعتك أو "Save as PDF".</div></div>
+  <div class="warning">
+    <strong>مهم:</strong> في صندوق الطباعة، اضغط <strong>"More settings"</strong> ثم ألغِ علامة <strong>"Headers and footers"</strong>. وإلا سيظهر التاريخ والرابط فوق وتحت الإيصال. الإعداد يُحفظ للمرات القادمة.
+  </div>
+
+  <h3>بعد تأكيد الزيارة</h3>
+  <div class="tip">
+    <strong>تلقائياً:</strong>
+    <ul style="margin:4px 0;font-size:11px;">
+      <li>دين الزبون عليك للبدل يقل من 3 إلى 0 لتر لبن.</li>
+      <li>دين الزبون لك يزيد من 85 ₪ إلى 156 ₪ (85 السابق + 71 الجديد).</li>
+      <li>يصل إشعار فوري لمجدي على جرسه.</li>
+      <li>تظهر الزيارة في قائمة "زياراتي".</li>
+    </ul>
+  </div>
+
+  <div class="footer-page">صفحة 16 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+<!-- ============ D — FAQ ============ -->
+<section class="page">
+  <div class="section-header"><div class="num">القسم د — الفصل 15</div><h2>أسئلة شائعة ونصائح</h2></div>
+
+  <h3>للمدير والموظف معاً</h3>
+
+  <div style="margin:14px 0;font-size:13px;">
+    <strong>❓ هل التطبيق يعمل بدون إنترنت؟</strong><br>
+    لا — يحتاج إنترنت لتزامن البيانات. لكنه خفيف جداً، يعمل حتى مع شبكة بطيئة.
+  </div>
+
+  <div style="margin:14px 0;font-size:13px;">
+    <strong>❓ هل يعمل على iPhone و Android؟</strong><br>
+    نعم، على أي متصفح (Chrome / Safari / Firefox). لا حاجة لتثبيت تطبيق.
+  </div>
+
+  <div style="margin:14px 0;font-size:13px;">
+    <strong>❓ نسيت كلمة المرور — ماذا أفعل؟</strong><br>
+    اتصل بمجدي. من حسابه يدخل إلى "الموظفين" ويُعيد ضبط كلمة المرور.
+  </div>
+
+  <div style="margin:14px 0;font-size:13px;">
+    <strong>❓ هل البيانات آمنة؟</strong><br>
+    نعم. كل بياناتك مخزّنة على Supabase (شركة عالمية مرخّصة)، مع نسخ احتياطية يومية لمدة 7 أيام، وكل اتصال مشفّر.
+  </div>
+
+  <div style="margin:14px 0;font-size:13px;">
+    <strong>❓ هل التطبيق مجاني؟</strong><br>
+    نعم — بنيناه بالكامل على خدمات مجانية. لن تدفع شيئاً ما دامت الكميات في حدود معقولة (وهي كبيرة جداً لمصنع بحجمكم).
+  </div>
+
+  <div style="margin:14px 0;font-size:13px;">
+    <strong>❓ موظف غادر الشركة — ماذا أفعل؟</strong><br>
+    مجدي → "المزيد" → "الموظفين" → اضغط على الموظف → "موقوف". لن يستطيع الدخول لكن تاريخ زياراته يبقى محفوظاً.
+  </div>
+
+  <div style="margin:14px 0;font-size:13px;">
+    <strong>❓ كيف أرسل تقرير CSV للمحاسب أحمد دحبور؟</strong><br>
+    من "تصدير" → اختر "المبيعات" → الفترة → "تحميل CSV". الملف ينزل عندك. أرسله عبر الواتساب أو الإيميل. سيفتحه أحمد مباشرة في Excel أو في برنامج دحبور للحسابات.
+  </div>
+
+  <div style="margin:14px 0;font-size:13px;">
+    <strong>❓ ماذا أفعل إذا التطبيق توقف عن العمل؟</strong><br>
+    1. أعد تحميل الصفحة (سحب للأسفل في الموبايل).<br>
+    2. تأكد من الإنترنت.<br>
+    3. إذا استمرّت المشكلة، اتصل بمحمود مرداوي (مهندس التطبيق).
+  </div>
+
+  <h3 style="margin-top:30px;">نصائح لاستخدام أفضل</h3>
+  <div class="tip">
+    💡 <strong>للموظف:</strong> اضغط على رقم الكمية لمسحه وكتابة رقم جديد بسرعة (بدلاً من حذف رقم رقم).
+  </div>
+  <div class="tip">
+    💡 <strong>للمدير:</strong> راجع جرس الإشعارات كل يوم. الزبائن "بانتظار الموافقة" يجب أن يُعتمدوا قبل نهاية الأسبوع.
+  </div>
+  <div class="tip">
+    💡 <strong>للمدير:</strong> صدّر تقارير المصاريف شهرياً وأرسلها للمحاسب. هذا يجعل نهاية السنة المالية أسهل بكثير.
+  </div>
+  <div class="tip">
+    💡 <strong>للمدير:</strong> استخدم المساعد الذكي يومياً — حتى لمجرد "كم ربحت اليوم؟". هو الأسرع للوصول للأرقام.
+  </div>
+
+  <div style="margin-top:30px;border-top:2px solid var(--border);padding-top:14px;text-align:center;color:var(--muted);font-size:11px;">
+    <strong style="color:var(--forest);">تواصل للدعم الفني</strong><br>
+    محمود مرداوي · ma.mardawi@gmail.com<br>
+    التطبيق: <code style="direction:ltr;">https://alban-al-gasr.netlify.app</code><br>
+    الإصدار 1.0 · يونيو 2026
+  </div>
+
+  <div class="footer-page">صفحة 17 — ألبان وأجبان القصر · دليل الاستخدام v1.0</div>
+</section>
+
+</body>
+</html>
