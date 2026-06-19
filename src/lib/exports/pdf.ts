@@ -1,34 +1,42 @@
 "use client";
 
 import pdfMake from "pdfmake/build/pdfmake";
-import type { TDocumentDefinitions } from "pdfmake/interfaces";
+import type { TDocumentDefinitions, TFontDictionary } from "pdfmake/interfaces";
 
-let fontsReady = false;
+// Cache the font as base64 — fetched once, reused for every PDF.
+let cairoBase64: string | null = null;
 
-async function ensureFonts(): Promise<void> {
-  if (fontsReady) return;
+async function ensureCairo(): Promise<string> {
+  if (cairoBase64) return cairoBase64;
 
-  async function fetchAsBase64(url: string): Promise<string> {
-    const r = await fetch(url);
-    const buf = await r.arrayBuffer();
-    const bytes = new Uint8Array(buf);
-    let bin = "";
-    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-    return btoa(bin);
-  }
+  const r = await fetch("/fonts/Cairo-Variable.ttf");
+  if (!r.ok) throw new Error(`فشل تحميل خط Cairo (HTTP ${r.status})`);
+  const buf = await r.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  cairoBase64 = btoa(bin);
+  return cairoBase64;
+}
 
-  const cairo = await fetchAsBase64("/fonts/Cairo-Variable.ttf");
+/**
+ * Build a pdfmake document and trigger download in browser.
+ *
+ * pdfmake 0.3.x removed the global `pdfMake.vfs` / `pdfMake.fonts` config —
+ * fonts + vfs are now passed as positional arguments to createPdf:
+ *   createPdf(def, tableLayouts, fonts, vfs)
+ *
+ * We use a Cairo variable TTF for all four weight slots; bold won't visually
+ * differ but Arabic shapes correctly (v1 tradeoff to avoid a separate Bold file).
+ */
+export async function downloadPdf(definition: TDocumentDefinitions, filename: string): Promise<void> {
+  const cairo = await ensureCairo();
 
-  type PMLike = {
-    vfs?: Record<string, string>;
-    fonts?: Record<string, { normal?: string; bold?: string; italics?: string; bolditalics?: string }>;
+  const vfs: Record<string, string> = {
+    "Cairo-Variable.ttf": cairo,
   };
-  const pm = pdfMake as unknown as PMLike;
-  pm.vfs = pm.vfs ?? {};
-  pm.vfs["Cairo-Variable.ttf"] = cairo;
-  // Variable font: same file for all 4 slots. Bold/italic axes won't visually differ
-  // but Arabic shaping works correctly — sufficient for v1 receipts/reports.
-  pm.fonts = {
+
+  const fonts: TFontDictionary = {
     Cairo: {
       normal:      "Cairo-Variable.ttf",
       bold:        "Cairo-Variable.ttf",
@@ -37,17 +45,20 @@ async function ensureFonts(): Promise<void> {
     },
   };
 
-  fontsReady = true;
-}
-
-/**
- * Build a pdfmake document and trigger download in browser.
- */
-export async function downloadPdf(definition: TDocumentDefinitions, filename: string): Promise<void> {
-  await ensureFonts();
   const fullDef: TDocumentDefinitions = {
     ...definition,
     defaultStyle: { font: "Cairo", fontSize: 10, ...(definition.defaultStyle ?? {}) },
   };
-  pdfMake.createPdf(fullDef).download(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
+
+  // pdfmake 0.3.x signature: createPdf(def, tableLayouts, fonts, vfs).
+  // TS types only declare the first 1-2 args; cast through unknown to bypass.
+  type CreatePdf = (
+    def: TDocumentDefinitions,
+    tableLayouts: unknown,
+    fonts: TFontDictionary,
+    vfs: Record<string, string>,
+  ) => { download: (filename: string) => void };
+  const cp = pdfMake.createPdf as unknown as CreatePdf;
+  cp(fullDef, undefined, fonts, vfs)
+    .download(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
 }
