@@ -59,7 +59,20 @@ export function ClientEditForm({ initial }: { initial: ClientFormInitial }) {
       <div>
         <label className="block text-sm font-cairo text-ink mb-1">العنوان</label>
         <input value={address} onChange={(e) => setAddress(e.target.value)}
+          placeholder="مثال: عرّابة، الحارة الغربية مقابل صيدلية..."
           className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-ink focus:outline-none focus:ring-2 focus:ring-primary" />
+        {address.trim().length > 2 && (
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+            target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary font-cairo font-semibold mt-1.5"
+          >
+            📍 افتح في خرائط Google
+          </a>
+        )}
+        <p className="text-[10px] text-muted font-cairo mt-1">
+          اكتب وصفاً نصّياً، أو لصق رابط Google Maps، أو إحداثيات (مثل: 32.4567, 35.1234).
+        </p>
       </div>
       <div>
         <label className="block text-sm font-cairo text-ink mb-1">ملاحظات</label>

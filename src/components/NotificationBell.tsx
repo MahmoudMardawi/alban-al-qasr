@@ -7,25 +7,30 @@ import { createClient } from "@/lib/supabase/client";
 
 interface Props { initialCount: number }
 
+export const ACTIVITY_READ_EVENT = "activity-marked-read";
+
 export function NotificationBell({ initialCount }: Props) {
   const [count, setCount] = useState(initialCount);
 
   useEffect(() => {
     const supabase = createClient();
+
+    // 1. Realtime subscription for live increments
     const channel = supabase
       .channel("activity_log_changes")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "activity_log" }, () => {
         setCount((c) => c + 1);
       })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "activity_log" }, async () => {
-        const { count: c } = await supabase
-          .from("activity_log")
-          .select("id", { count: "exact", head: true })
-          .eq("read_by_admin", false);
-        setCount(c ?? 0);
-      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // 2. Direct event from MarkAllReadButton — guarantees clear even if Realtime is laggy
+    function onMarkedRead() { setCount(0); }
+    window.addEventListener(ACTIVITY_READ_EVENT, onMarkedRead);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener(ACTIVITY_READ_EVENT, onMarkedRead);
+    };
   }, []);
 
   return (

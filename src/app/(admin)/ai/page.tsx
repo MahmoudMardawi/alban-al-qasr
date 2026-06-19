@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Camera, Send, RotateCcw, Sparkles } from "lucide-react";
 import { ChatBubble } from "@/components/ChatBubble";
 
@@ -16,11 +16,37 @@ const SUGGESTIONS = [
   "قارن أرباح هذا الشهر بالشهر السابق",
 ];
 
+const STORAGE_KEY = "ai-chat-history-v1";
+
+// Strip thumbnails (object URLs) before persisting — they expire on reload
+function persistableMessages(msgs: ChatMsg[]): ChatMsg[] {
+  return msgs.map((m) => {
+    if (m.thumbnailUrl) { const { thumbnailUrl: _drop, ...rest } = m; void _drop; return rest as ChatMsg; }
+    return m;
+  });
+}
+
 export default function AiAssistant() {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput]       = useState("");
   const [busy, setBusy]         = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Restore history on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setMessages(JSON.parse(saved));
+    } catch { /* ignore corrupt history */ }
+  }, []);
+
+  // Persist on every change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(persistableMessages(messages))); }
+    catch { /* localStorage full / disabled */ }
+  }, [messages]);
 
   async function send(textOverride?: string) {
     const question = (textOverride ?? input).trim();
@@ -88,7 +114,10 @@ export default function AiAssistant() {
     reader.readAsDataURL(file);
   }
 
-  function reset() { setMessages([]); }
+  function reset() {
+    setMessages([]);
+    if (typeof window !== "undefined") localStorage.removeItem(STORAGE_KEY);
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-9rem)]">

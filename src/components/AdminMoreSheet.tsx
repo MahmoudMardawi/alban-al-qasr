@@ -46,8 +46,11 @@ export function AdminMoreSheet({ open, onClose }: Props) {
         </ul>
         <form action="/logout" method="post">
           <button type="submit" className="w-full rounded-xl bg-red-50 text-danger border border-red-200 font-cairo font-bold py-3 flex items-center justify-center gap-2">
-            <LogOut size={18} /> خروج
+            <LogOut size={18} /> تسجيل الخروج من الحساب
           </button>
+          <p className="text-[10px] text-muted text-center mt-1 font-cairo">
+            (سيُطلب منك إدخال كلمة المرور مجدداً)
+          </p>
         </form>
       </div>
     </div>
