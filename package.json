@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "types:gen": "supabase gen types typescript --linked --schema public > src/lib/types.ts"
   },
   "dependencies": {
     "@google/genai": "^2.9.0",
