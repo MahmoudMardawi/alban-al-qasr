@@ -3,16 +3,16 @@
 import { useState, useRef, useEffect } from "react";
 import { Camera, Send, Plus, Sparkles, History, Trash2, X } from "lucide-react";
 import { ChatBubble } from "@/components/ChatBubble";
+import { listChats, upsertChat, deleteChat as deleteChatAction, type PersistedChatMsg } from "./actions";
 
-interface ChatMsg {
-  id: string; role: "user" | "assistant"; text: string;
-  provider?: "gemini" | "groq"; thumbnailUrl?: string;
+interface ChatMsg extends PersistedChatMsg {
+  thumbnailUrl?: string;   // volatile, not persisted
 }
 interface Chat {
   id: string;
   title: string;
   messages: ChatMsg[];
-  updatedAt: number;
+  updated_at: number;      // local timestamp for sorting
 }
 
 const SUGGESTIONS = [
@@ -22,36 +22,15 @@ const SUGGESTIONS = [
   "قارن أرباح هذا الشهر بالشهر السابق",
 ];
 
-const STORAGE_KEY = "ai-chats-v2";
-
-function stripVolatile(msgs: ChatMsg[]): ChatMsg[] {
-  // Drop thumbnailUrl (object URLs expire) before persisting
-  return msgs.map((m) => {
-    if (m.thumbnailUrl) { const { thumbnailUrl: _drop, ...rest } = m; void _drop; return rest as ChatMsg; }
-    return m;
-  });
+function stripVolatile(msgs: ChatMsg[]): PersistedChatMsg[] {
+  return msgs.map((m) => ({
+    id: m.id, role: m.role, text: m.text, ...(m.provider ? { provider: m.provider } : {}),
+  }));
 }
 function deriveTitle(messages: ChatMsg[]): string {
   const firstUser = messages.find((m) => m.role === "user");
   if (!firstUser) return "محادثة جديدة";
   return firstUser.text.slice(0, 60).replace(/\n/g, " ");
-}
-function loadChats(): Chat[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((c): c is Chat => !!c && typeof (c as Chat).id === "string");
-  } catch { return []; }
-}
-function saveChats(chats: Chat[]) {
-  if (typeof window === "undefined") return;
-  try {
-    const serializable = chats.map((c) => ({ ...c, messages: stripVolatile(c.messages) }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
-  } catch { /* quota / disabled */ }
 }
 function relativeWhen(ts: number): string {
   const ms = Date.now() - ts;
@@ -68,48 +47,73 @@ function relativeWhen(ts: number): string {
 export default function AiAssistant() {
   const [chats, setChats]         = useState<Chat[]>([]);
   const [activeId, setActiveId]   = useState<string | null>(null);
-  const [restored, setRestored]   = useState(false);
+  const [loading, setLoading]     = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [input, setInput]         = useState("");
   const [busy, setBusy]           = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Restore on mount
+  // Load chats from server on mount
   useEffect(() => {
-    const loaded = loadChats();
-    setChats(loaded);
-    if (loaded.length > 0) {
-      setActiveId(loaded.sort((a, b) => b.updatedAt - a.updatedAt)[0].id);
-    }
-    setRestored(true);
+    (async () => {
+      const res = await listChats();
+      if (res.error) {
+        setSyncError(res.error);
+      } else if (res.chats) {
+        const loaded: Chat[] = res.chats.map((c) => ({
+          id: c.id, title: c.title,
+          messages: c.messages as ChatMsg[],
+          updated_at: new Date(c.updated_at).getTime(),
+        }));
+        setChats(loaded);
+        if (loaded.length > 0) setActiveId(loaded[0].id);
+      }
+      setLoading(false);
+    })();
   }, []);
-
-  // Persist after every state change (but only post-restore)
-  useEffect(() => {
-    if (!restored) return;
-    saveChats(chats);
-  }, [chats, restored]);
 
   const activeChat = chats.find((c) => c.id === activeId) ?? null;
   const messages = activeChat?.messages ?? [];
 
+  // Save a chat to the server (best-effort; surfaces error in syncError)
+  async function persist(chat: Chat) {
+    const res = await upsertChat({
+      id: chat.id,
+      title: chat.title,
+      messages: stripVolatile(chat.messages),
+    });
+    if (res.error) setSyncError(res.error);
+    else setSyncError(null);
+  }
+
   function ensureActiveChat(): string {
     if (activeId && chats.some((c) => c.id === activeId)) return activeId;
     const id = crypto.randomUUID();
-    const fresh: Chat = { id, title: "محادثة جديدة", messages: [], updatedAt: Date.now() };
+    const fresh: Chat = { id, title: "محادثة جديدة", messages: [], updated_at: Date.now() };
     setChats((prev) => [fresh, ...prev]);
     setActiveId(id);
+    // First persist will happen when first message is appended
     return id;
   }
 
-  function appendMessage(id: string, msg: ChatMsg) {
+  function appendMessage(chatId: string, msg: ChatMsg) {
     setChats((prev) => {
       const updated = prev.map((c) => {
-        if (c.id !== id) return c;
+        if (c.id !== chatId) return c;
         const newMessages = [...c.messages, msg];
-        return { ...c, messages: newMessages, title: deriveTitle(newMessages), updatedAt: Date.now() };
+        return {
+          ...c,
+          messages: newMessages,
+          title: deriveTitle(newMessages),
+          updated_at: Date.now(),
+        };
       });
-      return [...updated].sort((a, b) => b.updatedAt - a.updatedAt);
+      const sorted = [...updated].sort((a, b) => b.updated_at - a.updated_at);
+      // Persist the affected chat
+      const target = sorted.find((c) => c.id === chatId);
+      if (target) void persist(target);
+      return sorted;
     });
   }
 
@@ -178,10 +182,11 @@ export default function AiAssistant() {
 
   function newChat() {
     const id = crypto.randomUUID();
-    const fresh: Chat = { id, title: "محادثة جديدة", messages: [], updatedAt: Date.now() };
+    const fresh: Chat = { id, title: "محادثة جديدة", messages: [], updated_at: Date.now() };
     setChats((prev) => [fresh, ...prev]);
     setActiveId(id);
     setHistoryOpen(false);
+    // Don't persist yet — empty chat. Persists when first message lands.
   }
 
   function selectChat(id: string) {
@@ -189,14 +194,16 @@ export default function AiAssistant() {
     setHistoryOpen(false);
   }
 
-  function deleteChat(id: string) {
+  async function removeChat(id: string) {
+    // Optimistic
     setChats((prev) => {
       const filtered = prev.filter((c) => c.id !== id);
-      if (activeId === id) {
-        setActiveId(filtered[0]?.id ?? null);
-      }
+      if (activeId === id) setActiveId(filtered[0]?.id ?? null);
       return filtered;
     });
+    // Server delete (best-effort)
+    const res = await deleteChatAction(id);
+    if (res.error) setSyncError(res.error);
   }
 
   return (
@@ -206,7 +213,10 @@ export default function AiAssistant() {
           <Sparkles size={20} className="text-gold shrink-0" />
           <div className="min-w-0">
             <div className="font-cairo font-bold text-sm truncate">{activeChat?.title ?? "اسأل بياناتك"}</div>
-            <div className="text-[10px] opacity-80 font-cairo">مدعوم بـ Gemini · Groq</div>
+            <div className="text-[10px] opacity-80 font-cairo">
+              مدعوم بـ Gemini · Groq
+              {syncError && <span className="text-warn mr-2">· خطأ مزامنة</span>}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -222,11 +232,13 @@ export default function AiAssistant() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 bg-surface">
-        {messages.length === 0 && (
+        {loading ? (
+          <div className="text-center text-muted text-sm mt-8 font-cairo">جارٍ تحميل المحادثات...</div>
+        ) : messages.length === 0 ? (
           <div className="text-center text-muted text-sm mt-8 font-cairo">
             اسأل عن مبيعاتك، أرباحك، أو ارفع صورة فاتورة لتسجيلها كمصروف.
           </div>
-        )}
+        ) : null}
         {messages.map((m) => (
           <ChatBubble key={m.id} role={m.role} text={m.text} provider={m.provider} thumbnailUrl={m.thumbnailUrl} />
         ))}
@@ -298,10 +310,10 @@ export default function AiAssistant() {
                             {c.title}
                           </div>
                           <div className="text-[10px] text-muted font-cairo mt-0.5">
-                            {c.messages.length} رسالة · {relativeWhen(c.updatedAt)}
+                            {c.messages.length} رسالة · {relativeWhen(c.updated_at)}
                           </div>
                         </button>
-                        <button onClick={() => deleteChat(c.id)} aria-label="حذف"
+                        <button onClick={() => removeChat(c.id)} aria-label="حذف"
                           className="px-3 text-muted hover:text-danger flex items-center">
                           <Trash2 size={14} />
                         </button>
