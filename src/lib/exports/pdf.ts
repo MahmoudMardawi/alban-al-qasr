@@ -6,11 +6,16 @@ import type { TDocumentDefinitions } from "pdfmake/interfaces";
 let fontsReady = false;
 
 /**
- * pdfmake 0.3.x API (the legacy pdfMake.vfs / pdfMake.fonts globals are GONE):
- *  - virtual file system is `pdfMake.virtualfs` (one word; a VirtualFileSystem instance)
- *  - register a binary via `virtualfs.writeFileSync(name, base64String, "base64")`
- *  - fonts dict via `pdfMake.setFonts({...})` (or direct `pdfMake.fonts = {...}`)
- *  - `createPdf(def, options?)` takes only 1-2 args; everything else is on the printer
+ * pdfmake 0.3.x browser API (the proper one — found in the build/pdfmake.js bundle):
+ *
+ *   pdfMake.addVirtualFileSystem({ "filename.ttf": "<base64-string>" })
+ *   pdfMake.setFonts({ Cairo: { normal, bold, italics, bolditalics } })
+ *   pdfMake.createPdf(def).download(filename)
+ *
+ * The legacy globals (pdfMake.vfs / pdfMake.fonts) are GONE in 0.3.x.
+ * Don't use `virtualfs.writeFileSync` directly either — that requires Node Buffer
+ * which isn't reliably polyfilled in every browser bundle. addVirtualFileSystem
+ * handles the encoding internally.
  */
 async function ensureCairoFont(): Promise<void> {
   if (fontsReady) return;
@@ -23,14 +28,17 @@ async function ensureCairoFont(): Promise<void> {
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   const cairoBase64 = btoa(bin);
 
-  // Register binary in pdfmake's vfs. "base64" tells the Buffer to decode the string.
-  type Vfs = { writeFileSync: (name: string, content: string, encoding?: string) => void };
-  const vfs = (pdfMake as unknown as { virtualfs: Vfs }).virtualfs;
-  vfs.writeFileSync("Cairo-Variable.ttf", cairoBase64, "base64");
+  type PdfMakeBrowser = {
+    addVirtualFileSystem: (vfs: Record<string, string>) => void;
+    setFonts: (fonts: Record<string, { normal: string; bold?: string; italics?: string; bolditalics?: string }>) => void;
+  };
+  const pm = pdfMake as unknown as PdfMakeBrowser;
 
-  // Register the font dict via setFonts.
-  type SetFonts = (fonts: Record<string, { normal: string; bold?: string; italics?: string; bolditalics?: string }>) => void;
-  (pdfMake as unknown as { setFonts: SetFonts }).setFonts({
+  pm.addVirtualFileSystem({
+    "Cairo-Variable.ttf": cairoBase64,
+  });
+
+  pm.setFonts({
     Cairo: {
       normal:      "Cairo-Variable.ttf",
       bold:        "Cairo-Variable.ttf",
