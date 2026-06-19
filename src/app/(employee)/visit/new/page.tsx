@@ -97,6 +97,20 @@ function NewVisitContent() {
     return m;
   }, [products]);
 
+  // Combine persisted DB debt with pending draft lines so the user can replace
+  // products they JUST returned in this same visit, before confirming.
+  const effectiveReplacementDebt = useMemo(() => {
+    const m = new Map(replacementDebt);
+    for (const l of lines) {
+      if (l.line_type === "return_in") {
+        m.set(l.product_id, (m.get(l.product_id) ?? 0) + l.base_qty);
+      } else if (l.line_type === "replacement_out") {
+        m.set(l.product_id, (m.get(l.product_id) ?? 0) - l.base_qty);
+      }
+    }
+    return m;
+  }, [replacementDebt, lines]);
+
   const total = calcVisitTotal(lines);
 
   function openPicker(type: LineType) {
@@ -223,7 +237,7 @@ function NewVisitContent() {
         onPick={onPick}
         lineType={pickerType}
         products={products}
-        replacementDebt={replacementDebt}
+        replacementDebt={effectiveReplacementDebt}
       />
     </div>
   );
