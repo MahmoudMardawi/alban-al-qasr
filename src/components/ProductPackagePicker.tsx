@@ -35,7 +35,11 @@ interface Props {
 export function ProductPackagePicker({ open, onClose, onPick, lineType, products, replacementDebt }: Props) {
   const [selected, setSelected] = useState<ProductForPicker | null>(null);
   const [packageId, setPackageId] = useState<string | null>(null);
-  const [qty, setQty] = useState<number>(1);
+  const [qtyText, setQtyText] = useState<string>("1");
+
+  const parsedQty = Number(qtyText);
+  const qtyValid = qtyText.trim() !== "" && Number.isFinite(parsedQty) && parsedQty > 0;
+  const qtyTouched = qtyText !== "1";
 
   const filteredProducts = useMemo(() => {
     if (lineType !== "replacement_out" || !replacementDebt) return products;
@@ -47,13 +51,13 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
   function pickProduct(p: ProductForPicker) {
     setSelected(p);
     setPackageId(null);
-    setQty(1);
+    setQtyText("1");
   }
 
   function confirm() {
-    if (!selected) return;
+    if (!selected || !qtyValid) return;
     const pkg = packageId ? selected.packages.find((x) => x.id === packageId) ?? null : null;
-    const baseQty = calcBaseQty(qty, pkg ? { contains_qty: pkg.contains_qty } : null);
+    const baseQty = calcBaseQty(parsedQty, pkg ? { contains_qty: pkg.contains_qty } : null);
     const unitPrice =
       lineType === "sale"
         ? pkg ? pkg.package_price : selected.base_price
@@ -61,14 +65,14 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
     onPick({
       product_id: selected.id,
       package_id: pkg?.id ?? null,
-      qty,
+      qty: parsedQty,
       base_qty: baseQty,
       unit_price: unitPrice,
       line_type: lineType,
     });
     setSelected(null);
     setPackageId(null);
-    setQty(1);
+    setQtyText("1");
     onClose();
   }
 
@@ -164,21 +168,37 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
               ))}
             </div>
 
-            <div className="flex items-center gap-3 mb-4">
-              <label className="font-cairo text-sm text-ink">الكمية:</label>
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={qty}
-                onChange={(e) => setQty(Math.max(1, Number(e.target.value || 1)))}
-                className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-ink text-center font-cairo"
-              />
+            <div className="mb-4">
+              <div className="flex items-center gap-3">
+                <label htmlFor="picker-qty" className="font-cairo text-sm text-ink">الكمية:</label>
+                <input
+                  id="picker-qty"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  value={qtyText}
+                  onChange={(e) => setQtyText(e.target.value)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  placeholder="مثال: 3"
+                  className={`flex-1 rounded-xl border bg-surface px-3 py-2 text-ink text-center font-cairo focus:outline-none focus:ring-2 ${
+                    !qtyValid && qtyTouched
+                      ? "border-danger focus:ring-danger"
+                      : "border-border focus:ring-primary"
+                  }`}
+                />
+              </div>
+              {!qtyValid && qtyTouched && (
+                <p className="text-danger text-[11px] font-cairo mt-1.5">
+                  أدخل كمية أكبر من صفر
+                </p>
+              )}
             </div>
 
             <button
               onClick={confirm}
-              className="w-full rounded-xl bg-primary text-white font-cairo font-bold py-3 shadow-sm hover:bg-primary-dk"
+              disabled={!qtyValid}
+              className="w-full rounded-xl bg-primary text-white font-cairo font-bold py-3 shadow-sm hover:bg-primary-dk disabled:opacity-60 disabled:cursor-not-allowed"
             >
               إضافة إلى الزيارة
             </button>
