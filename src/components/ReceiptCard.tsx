@@ -1,4 +1,4 @@
-import { formatCurrency, formatQty, formatRelativeDate, type Unit } from "@/lib/format";
+import { formatCurrency, formatQty, formatDateShort, type Unit } from "@/lib/format";
 
 interface ReceiptLine {
   line_type: "sale" | "return_in" | "replacement_out";
@@ -73,8 +73,8 @@ export function ReceiptCard({ data }: { data: ReceiptData }) {
           <div className="text-muted">الزبون:</div>
           <div className="text-ink font-semibold text-left">{data.client_name}</div>
           <div className="text-muted">التاريخ:</div>
-          <div className="text-ink font-semibold text-left">
-            {formatRelativeDate(new Date(data.visited_at))} · {new Date(data.visited_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+          <div className="text-ink font-semibold text-left" dir="ltr">
+            {formatDateShort(new Date(data.visited_at))} · {new Date(data.visited_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
           </div>
           <div className="text-muted">الموظف:</div>
           <div className="text-ink font-semibold text-left">{data.employee_name}</div>

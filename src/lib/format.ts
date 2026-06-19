@@ -12,6 +12,13 @@ export function formatQty(qty: number, unit: Unit): string {
   return qty === 1 ? `${qty} قطعة` : `${qty} قطع`;
 }
 
+export function formatDateShort(date: Date): string {
+  const dd   = String(date.getDate()).padStart(2, "0");
+  const mm   = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = String(date.getFullYear());
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 export function formatRelativeDate(date: Date, now: Date = new Date()): string {
   const msPerDay = 24 * 60 * 60 * 1000;
   const startOfToday    = new Date(now.getFullYear(),  now.getMonth(),  now.getDate());
@@ -21,5 +28,5 @@ export function formatRelativeDate(date: Date, now: Date = new Date()): string {
   if (diffDays === 0) return "اليوم";
   if (diffDays === 1) return "أمس";
   if (diffDays > 1 && diffDays <= 7) return `منذ ${diffDays} أيام`;
-  return startOfThatDay.toISOString().slice(0, 10);
+  return formatDateShort(startOfThatDay);
 }

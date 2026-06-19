@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCurrency, formatQty, formatRelativeDate } from "@/lib/format";
+import { formatCurrency, formatQty, formatRelativeDate, formatDateShort } from "@/lib/format";
 
 describe("formatCurrency", () => {
   it("formats integer ILS with currency suffix", () => {
@@ -45,9 +45,19 @@ describe("formatRelativeDate", () => {
     const fiveDaysAgo = new Date("2026-06-14T12:00:00Z");
     expect(formatRelativeDate(fiveDaysAgo, today)).toBe("منذ 5 أيام");
   });
-  it("returns ISO date for older dates", () => {
+  it("returns DD/MM/YYYY for older dates", () => {
     const today = new Date("2026-06-19T12:00:00Z");
     const monthAgo = new Date("2026-05-19T12:00:00Z");
-    expect(formatRelativeDate(monthAgo, today)).toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(formatRelativeDate(monthAgo, today)).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+  });
+});
+
+describe("formatDateShort", () => {
+  it("formats as DD/MM/YYYY using local time", () => {
+    // Use local-time constructor so timezone doesn't shift the day
+    expect(formatDateShort(new Date(2026, 5, 19))).toBe("19/06/2026"); // June (month index 5)
+  });
+  it("pads single-digit day and month", () => {
+    expect(formatDateShort(new Date(2026, 2, 5))).toBe("05/03/2026"); // March 5
   });
 });
