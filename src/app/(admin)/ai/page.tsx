@@ -1,12 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Camera, Send, RotateCcw, Sparkles } from "lucide-react";
+import { Camera, Send, Plus, Sparkles, History, Trash2, X } from "lucide-react";
 import { ChatBubble } from "@/components/ChatBubble";
 
 interface ChatMsg {
   id: string; role: "user" | "assistant"; text: string;
   provider?: "gemini" | "groq"; thumbnailUrl?: string;
+}
+interface Chat {
+  id: string;
+  title: string;
+  messages: ChatMsg[];
+  updatedAt: number;
 }
 
 const SUGGESTIONS = [
@@ -16,50 +22,103 @@ const SUGGESTIONS = [
   "قارن أرباح هذا الشهر بالشهر السابق",
 ];
 
-const STORAGE_KEY = "ai-chat-history-v1";
+const STORAGE_KEY = "ai-chats-v2";
 
-// Strip thumbnails (object URLs) before persisting — they expire on reload
-function persistableMessages(msgs: ChatMsg[]): ChatMsg[] {
+function stripVolatile(msgs: ChatMsg[]): ChatMsg[] {
+  // Drop thumbnailUrl (object URLs expire) before persisting
   return msgs.map((m) => {
     if (m.thumbnailUrl) { const { thumbnailUrl: _drop, ...rest } = m; void _drop; return rest as ChatMsg; }
     return m;
   });
 }
+function deriveTitle(messages: ChatMsg[]): string {
+  const firstUser = messages.find((m) => m.role === "user");
+  if (!firstUser) return "محادثة جديدة";
+  return firstUser.text.slice(0, 60).replace(/\n/g, " ");
+}
+function loadChats(): Chat[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((c): c is Chat => !!c && typeof (c as Chat).id === "string");
+  } catch { return []; }
+}
+function saveChats(chats: Chat[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const serializable = chats.map((c) => ({ ...c, messages: stripVolatile(c.messages) }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
+  } catch { /* quota / disabled */ }
+}
+function relativeWhen(ts: number): string {
+  const ms = Date.now() - ts;
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return "الآن";
+  if (m < 60) return `قبل ${m} دقيقة`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `قبل ${h} ساعة`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `قبل ${d} يوم`;
+  return new Date(ts).toISOString().slice(0, 10);
+}
 
 export default function AiAssistant() {
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [restored, setRestored] = useState(false);
-  const [input, setInput]       = useState("");
-  const [busy, setBusy]         = useState(false);
+  const [chats, setChats]         = useState<Chat[]>([]);
+  const [activeId, setActiveId]   = useState<string | null>(null);
+  const [restored, setRestored]   = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [input, setInput]         = useState("");
+  const [busy, setBusy]           = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Restore history on mount FIRST
+  // Restore on mount
   useEffect(() => {
-    if (typeof window === "undefined") { setRestored(true); return; }
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed: ChatMsg[] = JSON.parse(saved);
-        if (Array.isArray(parsed)) setMessages(parsed);
-      }
-    } catch { /* ignore corrupt history */ }
+    const loaded = loadChats();
+    setChats(loaded);
+    if (loaded.length > 0) {
+      setActiveId(loaded.sort((a, b) => b.updatedAt - a.updatedAt)[0].id);
+    }
     setRestored(true);
   }, []);
 
-  // Persist on every change — but ONLY after restore has run.
-  // Otherwise the initial empty [] would overwrite saved history on mount.
+  // Persist after every state change (but only post-restore)
   useEffect(() => {
-    if (!restored || typeof window === "undefined") return;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(persistableMessages(messages))); }
-    catch { /* localStorage full / disabled */ }
-  }, [messages, restored]);
+    if (!restored) return;
+    saveChats(chats);
+  }, [chats, restored]);
+
+  const activeChat = chats.find((c) => c.id === activeId) ?? null;
+  const messages = activeChat?.messages ?? [];
+
+  function ensureActiveChat(): string {
+    if (activeId && chats.some((c) => c.id === activeId)) return activeId;
+    const id = crypto.randomUUID();
+    const fresh: Chat = { id, title: "محادثة جديدة", messages: [], updatedAt: Date.now() };
+    setChats((prev) => [fresh, ...prev]);
+    setActiveId(id);
+    return id;
+  }
+
+  function appendMessage(id: string, msg: ChatMsg) {
+    setChats((prev) => {
+      const updated = prev.map((c) => {
+        if (c.id !== id) return c;
+        const newMessages = [...c.messages, msg];
+        return { ...c, messages: newMessages, title: deriveTitle(newMessages), updatedAt: Date.now() };
+      });
+      return [...updated].sort((a, b) => b.updatedAt - a.updatedAt);
+    });
+  }
 
   async function send(textOverride?: string) {
     const question = (textOverride ?? input).trim();
     if (!question || busy) return;
+    const chatId = ensureActiveChat();
     setInput("");
-    const userMsg: ChatMsg = { id: crypto.randomUUID(), role: "user", text: question };
-    setMessages((m) => [...m, userMsg]);
+    appendMessage(chatId, { id: crypto.randomUUID(), role: "user", text: question });
     setBusy(true);
     try {
       const r = await fetch("/api/ai", {
@@ -68,16 +127,16 @@ export default function AiAssistant() {
         body: JSON.stringify({ question }),
       });
       const data = await r.json();
-      setMessages((m) => [...m, {
+      appendMessage(chatId, {
         id: crypto.randomUUID(), role: "assistant",
         text: data.answer ?? data.error ?? "—",
         provider: data.provider,
-      }]);
+      });
     } catch (e) {
-      setMessages((m) => [...m, {
+      appendMessage(chatId, {
         id: crypto.randomUUID(), role: "assistant",
         text: `خطأ: ${e instanceof Error ? e.message : String(e)}`,
-      }]);
+      });
     } finally {
       setBusy(false);
     }
@@ -85,17 +144,14 @@ export default function AiAssistant() {
 
   async function sendImage(file: File) {
     if (busy) return;
+    const chatId = ensureActiveChat();
     const reader = new FileReader();
     reader.onload = async () => {
       const result = reader.result as string;
       const [meta, base64] = result.split(",");
       const mimeType = meta.match(/data:([^;]+);/)?.[1] ?? "image/jpeg";
       const thumb = URL.createObjectURL(file);
-
-      setMessages((m) => [...m, {
-        id: crypto.randomUUID(), role: "user",
-        text: "📷 صورة فاتورة", thumbnailUrl: thumb,
-      }]);
+      appendMessage(chatId, { id: crypto.randomUUID(), role: "user", text: "📷 صورة فاتورة", thumbnailUrl: thumb });
       setBusy(true);
       try {
         const r = await fetch("/api/ai", {
@@ -104,15 +160,15 @@ export default function AiAssistant() {
           body: JSON.stringify({ imageBase64: base64, mimeType }),
         });
         const data = await r.json();
-        setMessages((m) => [...m, {
+        appendMessage(chatId, {
           id: crypto.randomUUID(), role: "assistant",
           text: data.answer ?? "—", provider: data.provider,
-        }]);
+        });
       } catch (e) {
-        setMessages((m) => [...m, {
+        appendMessage(chatId, {
           id: crypto.randomUUID(), role: "assistant",
           text: `خطأ: ${e instanceof Error ? e.message : String(e)}`,
-        }]);
+        });
       } finally {
         setBusy(false);
       }
@@ -120,24 +176,49 @@ export default function AiAssistant() {
     reader.readAsDataURL(file);
   }
 
-  function reset() {
-    setMessages([]);
-    if (typeof window !== "undefined") localStorage.removeItem(STORAGE_KEY);
+  function newChat() {
+    const id = crypto.randomUUID();
+    const fresh: Chat = { id, title: "محادثة جديدة", messages: [], updatedAt: Date.now() };
+    setChats((prev) => [fresh, ...prev]);
+    setActiveId(id);
+    setHistoryOpen(false);
+  }
+
+  function selectChat(id: string) {
+    setActiveId(id);
+    setHistoryOpen(false);
+  }
+
+  function deleteChat(id: string) {
+    setChats((prev) => {
+      const filtered = prev.filter((c) => c.id !== id);
+      if (activeId === id) {
+        setActiveId(filtered[0]?.id ?? null);
+      }
+      return filtered;
+    });
   }
 
   return (
     <div className="flex flex-col h-[calc(100vh-9rem)]">
-      <div className="bg-gradient-to-br from-forest to-primary-dk text-white px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles size={20} className="text-gold" />
-          <div>
-            <div className="font-cairo font-bold text-base">اسأل بياناتك</div>
-            <div className="text-[10px] opacity-80 font-cairo">مدعوم بـ Gemini · مجاني</div>
+      <div className="bg-gradient-to-br from-forest to-primary-dk text-white px-3 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <Sparkles size={20} className="text-gold shrink-0" />
+          <div className="min-w-0">
+            <div className="font-cairo font-bold text-sm truncate">{activeChat?.title ?? "اسأل بياناتك"}</div>
+            <div className="text-[10px] opacity-80 font-cairo">مدعوم بـ Gemini · Groq</div>
           </div>
         </div>
-        <button onClick={reset} className="flex items-center gap-1 text-xs bg-white/15 px-2.5 py-1 rounded-lg font-cairo">
-          <RotateCcw size={12} /> محادثة جديدة
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-1 text-xs bg-white/15 px-2.5 py-1 rounded-lg font-cairo">
+            <History size={12} /> {chats.length > 0 && <span className="text-[10px] bg-gold/30 rounded-full px-1.5">{chats.length}</span>} السجل
+          </button>
+          <button onClick={newChat}
+            className="flex items-center gap-1 text-xs bg-white/15 px-2.5 py-1 rounded-lg font-cairo">
+            <Plus size={12} /> جديدة
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 bg-surface">
@@ -182,6 +263,57 @@ export default function AiAssistant() {
           </button>
         </div>
       </div>
+
+      {/* History drawer */}
+      {historyOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setHistoryOpen(false)}>
+          <aside className="absolute top-0 right-0 bottom-0 w-80 max-w-[85%] bg-white shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gradient-to-br from-forest to-primary-dk text-white px-4 py-3 flex items-center justify-between">
+              <h3 className="font-cairo font-bold text-base flex items-center gap-2">
+                <History size={16} /> المحادثات السابقة
+              </h3>
+              <button onClick={() => setHistoryOpen(false)} className="text-white/80"><X size={18} /></button>
+            </div>
+            <button onClick={newChat}
+              className="m-3 flex items-center justify-center gap-1.5 bg-primary text-white font-cairo font-bold py-2.5 rounded-xl">
+              <Plus size={14} /> محادثة جديدة
+            </button>
+            {chats.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-muted text-sm font-cairo p-6 text-center">
+                لا توجد محادثات بعد. اسأل سؤالاً لبدء أول محادثة.
+              </div>
+            ) : (
+              <ul className="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5">
+                {chats.map((c) => {
+                  const isActive = c.id === activeId;
+                  return (
+                    <li key={c.id}>
+                      <div className={`flex items-stretch gap-1 border rounded-xl overflow-hidden ${
+                        isActive ? "bg-info-bg border-primary" : "bg-white border-border"
+                      }`}>
+                        <button onClick={() => selectChat(c.id)}
+                          className="flex-1 text-right px-3 py-2.5">
+                          <div className={`font-cairo font-semibold text-sm truncate ${isActive ? "text-forest" : "text-ink"}`}>
+                            {c.title}
+                          </div>
+                          <div className="text-[10px] text-muted font-cairo mt-0.5">
+                            {c.messages.length} رسالة · {relativeWhen(c.updatedAt)}
+                          </div>
+                        </button>
+                        <button onClick={() => deleteChat(c.id)} aria-label="حذف"
+                          className="px-3 text-muted hover:text-danger flex items-center">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
