@@ -18,7 +18,9 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-4 bg-info-bg">
       <div className="w-full max-w-sm bg-white rounded-2xl border border-border p-8 shadow-sm">
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 flex flex-col items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/mark.svg" alt="" aria-hidden="true" className="h-20 w-20 mb-2" />
           <h1 className="font-display text-3xl text-forest leading-tight">
             ألبان وأجبان القصر
           </h1>

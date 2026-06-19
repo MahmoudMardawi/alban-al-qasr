@@ -62,7 +62,9 @@ export function ReceiptCard({ data }: { data: ReceiptData }) {
 
   return (
     <div className="bg-white max-w-md mx-auto print:max-w-full">
-      <div className="bg-gradient-to-b from-forest to-primary-dk text-white p-5 text-center">
+      <div className="bg-gradient-to-b from-forest to-primary-dk text-white p-5 text-center flex flex-col items-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/mark.svg" alt="" aria-hidden="true" className="h-16 w-16 mb-2" />
         <div className="font-display text-2xl">{brandName}</div>
         <div className="text-xs opacity-80 mt-1">{brandArea}</div>
         <div className="text-[11px] opacity-70 mt-3 font-cairo">إيصال زيارة</div>

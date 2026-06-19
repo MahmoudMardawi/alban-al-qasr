@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="ختم ألبان وأجبان القصر">
+  <title>ألبان وأجبان القصر — official stamp (ختم)</title>
+  <defs>
+    <style><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+      .ar-amiri { font-family: 'Amiri', 'Traditional Arabic', 'Times New Roman', serif; fill: #1a3d2b; }
+    ]]></style>
+    <!-- Top arc: L→R via TOP. sweep=1 traces 9→12→3 (clockwise screen, via top).
+         At apex tangent points rightward, so glyph tops point UP (outward) = upright. -->
+    <path id="topArc" d="M 45,300 A 255,255 0 0,1 555,300" fill="none"/>
+  </defs>
+
+  <!-- Outer + inner rings -->
+  <circle cx="300" cy="300" r="288" fill="none" stroke="#1a3d2b" stroke-width="7"/>
+  <circle cx="300" cy="300" r="260" fill="none" stroke="#1a3d2b" stroke-width="2.2"/>
+
+  <!-- Top curved business name — upright on top arc; rely on Unicode bidi for Arabic order -->
+  <text class="ar-amiri" font-size="42" font-weight="700" letter-spacing="2">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">
+      ألبان وأجبان القصر
+    </textPath>
+  </text>
+
+  <!-- Side ornament stars at 3 and 9 o'clock -->
+  <g fill="#1a3d2b">
+    <g transform="translate(36 300)">
+      <path d="M 0,-9 L 2.4,-2.8 L 9,-2.8 L 3.7,1.1 L 5.6,7.3 L 0,3.6 L -5.6,7.3 L -3.7,1.1 L -9,-2.8 L -2.4,-2.8 Z"/>
+    </g>
+    <g transform="translate(564 300)">
+      <path d="M 0,-9 L 2.4,-2.8 L 9,-2.8 L 3.7,1.1 L 5.6,7.3 L 0,3.6 L -5.6,7.3 L -3.7,1.1 L -9,-2.8 L -2.4,-2.8 Z"/>
+    </g>
+  </g>
+
+  <!-- Central MARK, mono-forest, 140×140 centered around (300, 280) -->
+  <g transform="translate(232 192) scale(0.7)">
+    <g fill="#1a3d2b">
+      <path d="M 72,38 Q 78,18 86,38 L 92,38 Q 100,8 108,38 L 114,38 Q 122,18 128,38 Z"/>
+      <circle cx="82"  cy="20" r="2.2"/>
+      <circle cx="100" cy="10" r="2.8"/>
+      <circle cx="118" cy="20" r="2.2"/>
+      <rect x="70" y="38" width="60" height="4" rx="1.5"/>
+    </g>
+    <path d="M 38,178 L 38,96 Q 38,46 100,46 Q 162,46 162,96 L 162,178 Z"
+          fill="#ffffff" stroke="#1a3d2b" stroke-width="3.5"/>
+    <path d="M 100,76 Q 78,104 78,134 Q 78,158 100,158 Q 122,158 122,134 Q 122,104 100,76 Z"
+          fill="none" stroke="#1a3d2b" stroke-width="3"/>
+    <rect x="38" y="172" width="124" height="5" fill="#1a3d2b"/>
+  </g>
+
+  <!-- Central straight Arabic text (all Amiri for consistency with the curved top) -->
+  <text x="300" y="395" text-anchor="middle" class="ar-amiri" font-size="26" font-weight="700">
+    مصنع منتجات الألبان
+  </text>
+
+  <!-- thin divider -->
+  <line x1="180" y1="418" x2="420" y2="418" stroke="#1a3d2b" stroke-width="1.2" opacity="0.55"/>
+
+  <text x="300" y="450" text-anchor="middle" class="ar-amiri" font-size="22" font-weight="400">
+    عرابة — جنين — فلسطين
+  </text>
+
+  <text x="300" y="488" text-anchor="middle" class="ar-amiri" font-size="18" font-weight="400" opacity="0.85">
+    سجل تجاري — مصنع ألبان
+  </text>
+
+  <!-- Tiny diamond at bottom inside ring -->
+  <g fill="#1a3d2b" opacity="0.7">
+    <path d="M 300,520 L 308,530 L 300,540 L 292,530 Z"/>
+  </g>
+</svg>

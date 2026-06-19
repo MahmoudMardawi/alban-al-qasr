@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="صورة الملف الشخصي - ألبان وأجبان القصر">
+  <title>ألبان وأجبان القصر — circular profile avatar</title>
+  <defs>
+    <linearGradient id="c-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#1f6943"/>
+      <stop offset="100%" stop-color="#1a3d2b"/>
+    </linearGradient>
+    <linearGradient id="c-shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#2d8659"/>
+      <stop offset="100%" stop-color="#1a3d2b"/>
+    </linearGradient>
+    <linearGradient id="c-drop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eef6f0"/>
+    </linearGradient>
+    <radialGradient id="c-glow" cx="0.5" cy="0.32" r="0.7">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <style><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700&display=swap');
+      .ar-display { font-family: 'Amiri', 'Traditional Arabic', 'Times New Roman', serif; fill: #ffffff; }
+      .ar-body    { font-family: 'Cairo',  'Tahoma', sans-serif; fill: #d4a55a; }
+    ]]></style>
+  </defs>
+
+  <!-- circular forest background -->
+  <circle cx="512" cy="512" r="512" fill="url(#c-bg)"/>
+  <circle cx="512" cy="512" r="512" fill="url(#c-glow)"/>
+
+  <!-- decorative thin gold inner ring -->
+  <circle cx="512" cy="512" r="488" fill="none" stroke="#d4a55a" stroke-width="2.5" opacity="0.55"/>
+
+  <!-- mark, scaled 2.4 → 480×480, centered horizontally, sitting in upper-middle -->
+  <g transform="translate(272 200) scale(2.4)">
+    <g fill="#d4a55a">
+      <path d="M 72,38 Q 78,18 86,38 L 92,38 Q 100,8 108,38 L 114,38 Q 122,18 128,38 Z"/>
+      <circle cx="82"  cy="20" r="2.2"/>
+      <circle cx="100" cy="10" r="2.8"/>
+      <circle cx="118" cy="20" r="2.2"/>
+      <rect x="70" y="38" width="60" height="4" rx="1.5"/>
+    </g>
+    <path d="M 38,178 L 38,96 Q 38,46 100,46 Q 162,46 162,96 L 162,178 Z" fill="url(#c-shield)"/>
+    <path d="M 46,170 L 46,98 Q 46,54 100,54 Q 154,54 154,98 L 154,170" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.5"/>
+    <path d="M 100,76 Q 78,104 78,134 Q 78,158 100,158 Q 122,158 122,134 Q 122,104 100,76 Z" fill="url(#c-drop)"/>
+    <path d="M 92,98 Q 86,116 90,132" fill="none" stroke="#2d8659" stroke-opacity="0.22" stroke-width="2" stroke-linecap="round"/>
+    <rect x="38" y="172" width="124" height="6" fill="#d4a55a" opacity="0.9"/>
+  </g>
+
+  <!-- wordmark — pulled close to the mark (mark bottom ≈ y=627, wordmark baseline y=760) -->
+  <text x="512" y="780" text-anchor="middle" class="ar-display" font-size="72" font-weight="700">
+    ألبان وأجبان القصر
+  </text>
+
+  <text x="512" y="850" text-anchor="middle" class="ar-body" font-size="32" font-weight="600">
+    عرابة — جنين
+  </text>
+</svg>
