@@ -1,14 +1,7 @@
-import { getCurrentUserWithRole } from "@/lib/auth";
-import { BrandHeader } from "@/components/BrandHeader";
-
-export default async function EmployeeHome() {
-  const user = await getCurrentUserWithRole();
+export default function EmployeeHome() {
   return (
-    <div className="min-h-screen">
-      <BrandHeader subtitle={`مرحباً ${user?.full_name ?? ""} · موظف توزيع`} />
-      <main className="p-6 text-center text-muted">
-        <p className="text-sm">قائمة الزبائن ستظهر هنا (المرحلة 2)</p>
-      </main>
+    <div className="p-6 text-center text-muted">
+      <p className="text-sm font-cairo">قائمة الزبائن قيد التحميل... (P2.5 يستبدل هذا)</p>
     </div>
   );
 }

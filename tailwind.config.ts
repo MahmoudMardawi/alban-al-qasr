@@ -21,6 +21,7 @@ export default {
       },
       fontFamily: {
         sans:    ["var(--font-cairo)", "system-ui", "sans-serif"],
+        cairo:   ["var(--font-cairo)", "system-ui", "sans-serif"],
         display: ["var(--font-amiri)", "Georgia", "serif"],
       },
     },
