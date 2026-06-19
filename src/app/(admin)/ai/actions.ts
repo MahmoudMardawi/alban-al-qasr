@@ -16,8 +16,29 @@ export interface ServerChat {
   updated_at: string;
 }
 
+// Loose-typed client helper — the ai_chats table is new and not yet in the
+// generated Database types. After running `npm run types:gen` this can be
+// replaced with the proper generic client.
+type LooseSupabaseClient = {
+  auth: { getUser: () => Promise<{ data: { user: { id: string } | null } }> };
+  from: (table: string) => {
+    select: (cols: string) => {
+      eq: (col: string, val: unknown) => {
+        order: (col: string, opts: { ascending: boolean }) => Promise<{ data: unknown; error: { message: string } | null }>;
+      };
+    };
+    upsert: (row: Record<string, unknown>, opts?: { onConflict: string }) => Promise<{ error: { message: string } | null }>;
+    delete: () => { eq: (col: string, val: unknown) => Promise<{ error: { message: string } | null }> };
+  };
+};
+
+async function looseClient(): Promise<LooseSupabaseClient> {
+  const sb = await createClient();
+  return sb as unknown as LooseSupabaseClient;
+}
+
 export async function listChats(): Promise<{ chats?: ServerChat[]; error?: string }> {
-  const supabase = await createClient();
+  const supabase = await looseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "غير مسجّل دخول" };
 
@@ -29,21 +50,21 @@ export async function listChats(): Promise<{ chats?: ServerChat[]; error?: strin
 
   if (error) return { error: error.message };
 
-  const chats: ServerChat[] = (data ?? []).map((r) => {
-    const raw = r as { id: string; title: string; messages: unknown; updated_at: string };
-    return {
-      id: raw.id,
-      title: raw.title,
-      messages: Array.isArray(raw.messages) ? (raw.messages as PersistedChatMsg[]) : [],
-      updated_at: raw.updated_at,
-    };
-  });
+  type RawRow = { id: string; title: string; messages: unknown; updated_at: string };
+  const rows = (data ?? []) as RawRow[];
+
+  const chats: ServerChat[] = rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    messages: Array.isArray(r.messages) ? (r.messages as PersistedChatMsg[]) : [],
+    updated_at: r.updated_at,
+  }));
 
   return { chats };
 }
 
 export async function upsertChat(input: { id: string; title: string; messages: PersistedChatMsg[] }): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await looseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "غير مسجّل دخول" };
 
@@ -53,7 +74,7 @@ export async function upsertChat(input: { id: string; title: string; messages: P
       id:         input.id,
       owner_id:   user.id,
       title:      input.title.slice(0, 200),
-      messages:   input.messages as unknown as Record<string, unknown>[],
+      messages:   input.messages,
       updated_at: new Date().toISOString(),
     }, { onConflict: "id" });
 
@@ -62,7 +83,7 @@ export async function upsertChat(input: { id: string; title: string; messages: P
 }
 
 export async function deleteChat(id: string): Promise<{ error?: string }> {
-  const supabase = await createClient();
+  const supabase = await looseClient();
   const { error } = await supabase.from("ai_chats").delete().eq("id", id);
   if (error) return { error: error.message };
   return {};
