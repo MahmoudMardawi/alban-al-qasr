@@ -120,44 +120,38 @@ export default function ExportCenter() {
 
   async function downloadPdfReport() {
     const rows = await fetchRows();
-    const title = `${LABELS[reportType]} — ${start} → ${end}`;
+    const subtitle = `من ${start} إلى ${end}`;
 
-    let body: (string | number)[][] = [];
     let headers: string[] = [];
+    let body: (string | number)[][] = [];
+    let totalLine: string | undefined;
+
     if (reportType === "sales") {
       headers = ["التاريخ", "الزبون", "الموظف", "إجمالي البيع", "مرتجع", "بدل"];
-      body = (rows as SalesRow[]).map((r) => [
+      const sales = rows as SalesRow[];
+      body = sales.map((r) => [
         r.date, r.client, r.employee, formatCurrency(r.sale_total), r.returns, r.replacements,
       ]);
+      const total = sales.reduce((s, r) => s + r.sale_total, 0);
+      totalLine = formatCurrency(total);
     } else if (reportType === "expenses") {
       headers = ["التاريخ", "التصنيف", "المبلغ", "ملاحظة"];
-      body = (rows as ExpenseRow[]).map((r) => [r.date, r.category, formatCurrency(r.amount), r.note]);
+      const exps = rows as ExpenseRow[];
+      body = exps.map((r) => [r.date, r.category, formatCurrency(r.amount), r.note]);
+      const total = exps.reduce((s, r) => s + r.amount, 0);
+      totalLine = formatCurrency(total);
     } else {
       headers = ["التاريخ", "المنتج", "الوحدة", "إنتاج", "فاقد", "ملاحظة"];
-      body = (rows as ProdRow[]).map((r) => [r.date, r.product, r.unit, r.produced, r.wasted, r.note]);
+      const prods = rows as ProdRow[];
+      body = prods.map((r) => [r.date, r.product, r.unit, r.produced, r.wasted, r.note]);
     }
 
-    await downloadPdf({
-      content: [
-        { text: "ألبان وأجبان القصر", style: "brand", alignment: "center" },
-        { text: title,                style: "subtitle", alignment: "center", margin: [0, 4, 0, 12] },
-        {
-          table: {
-            headerRows: 1, widths: Array(headers.length).fill("*"),
-            body: [headers.map((h) => ({ text: h, style: "th" })), ...body],
-          },
-          layout: "lightHorizontalLines",
-        },
-        { text: `عدد الصفوف: ${rows.length}`, style: "footer", margin: [0, 12, 0, 0] },
-      ],
-      styles: {
-        brand:    { fontSize: 18, bold: true, color: "#1a3d2b" },
-        subtitle: { fontSize: 11, color: "#6b7d72" },
-        th:       { bold: true, fillColor: "#eef6f0", color: "#1a3d2b" },
-        footer:   { fontSize: 9, color: "#6b7d72", alignment: "left" },
-      },
-      pageMargins: [30, 30, 30, 30],
-      defaultStyle: { alignment: "right" },
+    downloadPdf({
+      title:    LABELS[reportType],
+      subtitle,
+      headers,
+      rows: body,
+      totalLine,
     }, `${reportType}_${start}_${end}.pdf`);
   }
 
