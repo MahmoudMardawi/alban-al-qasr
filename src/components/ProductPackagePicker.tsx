@@ -30,9 +30,12 @@ interface Props {
   lineType: LineType;
   products: ProductForPicker[];
   replacementDebt?: Map<string, number>;
+  /** Remaining qty per product currently on the employee's truck, in base units.
+   *  Updates as draft lines are added. Only shown for sale + replacement_out modes. */
+  truckStock?: Map<string, number>;
 }
 
-export function ProductPackagePicker({ open, onClose, onPick, lineType, products, replacementDebt }: Props) {
+export function ProductPackagePicker({ open, onClose, onPick, lineType, products, replacementDebt, truckStock }: Props) {
   const [selected, setSelected] = useState<ProductForPicker | null>(null);
   const [packageId, setPackageId] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string>("1");
@@ -99,17 +102,33 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
             ) : (
               filteredProducts.map((p) => {
                 const debtUnits = replacementDebt?.get(p.id);
+                const showTruck = (lineType === "sale" || lineType === "replacement_out") && truckStock;
+                const stockUnits = showTruck ? (truckStock.get(p.id) ?? 0) : null;
+                const outOfStock = showTruck && stockUnits !== null && stockUnits <= 0;
                 return (
                   <li key={p.id}>
                     <button
                       onClick={() => pickProduct(p)}
-                      className="w-full flex items-center justify-between bg-info-bg/40 border border-border rounded-xl p-3 hover:bg-info-bg"
+                      className={`w-full flex flex-col gap-1 border rounded-xl p-3 ${
+                        outOfStock
+                          ? "bg-red-50/60 border-red-200 opacity-90"
+                          : "bg-info-bg/40 border-border hover:bg-info-bg"
+                      }`}
                     >
-                      <span className="font-cairo font-semibold text-ink text-sm">{p.name_ar}</span>
-                      <span className="text-[11px] text-muted font-cairo">
-                        {lineType === "sale" ? formatCurrency(p.base_price) + "/" + p.base_unit : ""}
-                        {lineType === "replacement_out" && debtUnits ? `متاح ${formatQty(debtUnits, p.base_unit)}` : ""}
-                      </span>
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-cairo font-semibold text-ink text-sm">{p.name_ar}</span>
+                        <span className="text-[11px] text-muted font-cairo">
+                          {lineType === "sale" ? formatCurrency(p.base_price) + "/" + p.base_unit : ""}
+                          {lineType === "replacement_out" && debtUnits ? `متاح ${formatQty(debtUnits, p.base_unit)}` : ""}
+                        </span>
+                      </div>
+                      {showTruck && stockUnits !== null && (
+                        <div className={`text-[10px] font-cairo flex items-center gap-1 ${
+                          outOfStock ? "text-danger font-bold" : stockUnits < 5 ? "text-warn font-bold" : "text-primary-dk"
+                        }`}>
+                          🚚 {outOfStock ? "نفد من السيارة!" : `متبقي بالسيارة: ${formatQty(stockUnits, p.base_unit)}`}
+                        </div>
+                      )}
                     </button>
                   </li>
                 );
@@ -124,7 +143,16 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
             >
               ← اختر منتج آخر
             </button>
-            <h4 className="font-cairo font-bold text-forest text-sm mb-2">{selected.name_ar}</h4>
+            <h4 className="font-cairo font-bold text-forest text-sm mb-1">{selected.name_ar}</h4>
+            {(lineType === "sale" || lineType === "replacement_out") && truckStock && (
+              <div className={`text-[11px] font-cairo mb-2 ${
+                (truckStock.get(selected.id) ?? 0) <= 0 ? "text-danger font-bold" :
+                (truckStock.get(selected.id) ?? 0) < 5  ? "text-warn font-bold" :
+                "text-primary-dk"
+              }`}>
+                🚚 متبقي بالسيارة: {formatQty(truckStock.get(selected.id) ?? 0, selected.base_unit)}
+              </div>
+            )}
             <p className="text-xs text-muted mb-3 font-cairo">اختر العبوة:</p>
 
             <div className="space-y-2 mb-4">

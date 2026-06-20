@@ -33,6 +33,9 @@ function NewVisitContent() {
   const [balance, setBalance] = useState<BalanceData>({ money_owed: 0, replacements: [] });
   const [products, setProducts] = useState<ProductForPicker[]>([]);
   const [replacementDebt, setReplacementDebt] = useState<Map<string, number>>(new Map());
+  /** Truck stock as of last DB read — combined with draft lines below for live remaining */
+  const [baseTruckStock, setBaseTruckStock] = useState<Map<string, number>>(new Map());
+  const [hasOpenLoad, setHasOpenLoad] = useState(false);
 
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -49,12 +52,29 @@ function NewVisitContent() {
     if (!clientId) return;
     const supabase = createClient();
     (async () => {
-      const [clientRes, moneyRes, replRes, productsRes, packagesRes] = await Promise.all([
+      const { data: { user } } = await supabase.auth.getUser();
+      const today = new Date();
+      const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const dayEnd   = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+      const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+      const [clientRes, moneyRes, replRes, productsRes, packagesRes, openLoadRes, todayVisitsRes] = await Promise.all([
         supabase.from("clients").select("id, name, address").eq("id", clientId).single(),
         supabase.from("v_client_money_balance").select("balance").eq("client_id", clientId).maybeSingle(),
         supabase.from("v_client_replacement_debt").select("product_id, owed_base_qty").eq("client_id", clientId),
         supabase.from("products").select("id, name_ar, base_unit, base_price").eq("is_active", true),
         supabase.from("product_packages").select("id, product_id, package_name, contains_qty, package_price").eq("is_active", true),
+        user ? supabase.from("truck_loads")
+          .select("id, truck_load_items(product_id, qty_loaded, qty_returned)")
+          .eq("employee_id", user.id)
+          .eq("status", "open")
+          .eq("loaded_at", todayDate)
+          .maybeSingle() : Promise.resolve({ data: null }),
+        user ? supabase.from("visits")
+          .select("id, visit_lines(product_id, base_qty, line_type)")
+          .eq("employee_id", user.id)
+          .gte("visited_at", dayStart)
+          .lt("visited_at", dayEnd) : Promise.resolve({ data: [] }),
       ]);
       if (clientRes.data) setClient(clientRes.data);
 
@@ -93,6 +113,30 @@ function NewVisitContent() {
           })
           .filter((x): x is NonNullable<typeof x> => x !== null),
       });
+
+      // Compute truck stock = qty_loaded - qty_returned - already-sold-today (across all OTHER visits)
+      type LoadRow = { id: string; truck_load_items: Array<{ product_id: string; qty_loaded: number; qty_returned: number }> };
+      const openLoad = openLoadRes.data as LoadRow | null;
+      if (openLoad) {
+        setHasOpenLoad(true);
+        type VisitLite = { visit_lines: Array<{ product_id: string; base_qty: number; line_type: string }> };
+        const todayVisits = (todayVisitsRes.data ?? []) as unknown as VisitLite[];
+        const soldByProduct = new Map<string, number>();
+        for (const v of todayVisits) for (const l of v.visit_lines) {
+          if (l.line_type === "sale" || l.line_type === "replacement_out") {
+            soldByProduct.set(l.product_id, (soldByProduct.get(l.product_id) ?? 0) + Number(l.base_qty));
+          }
+        }
+        const stock = new Map<string, number>();
+        for (const item of openLoad.truck_load_items) {
+          const remaining = Number(item.qty_loaded) - Number(item.qty_returned) - (soldByProduct.get(item.product_id) ?? 0);
+          stock.set(item.product_id, remaining);
+        }
+        setBaseTruckStock(stock);
+      } else {
+        setHasOpenLoad(false);
+        setBaseTruckStock(new Map());
+      }
     })();
   }, [clientId]);
 
@@ -116,6 +160,17 @@ function NewVisitContent() {
     }
     return m;
   }, [replacementDebt, lines]);
+
+  // Live truck stock = DB snapshot minus what's already in this draft visit
+  const effectiveTruckStock = useMemo(() => {
+    const m = new Map(baseTruckStock);
+    for (const l of lines) {
+      if (l.line_type === "sale" || l.line_type === "replacement_out") {
+        m.set(l.product_id, (m.get(l.product_id) ?? 0) - l.base_qty);
+      }
+    }
+    return m;
+  }, [baseTruckStock, lines]);
 
   const total = calcVisitTotal(lines);
 
@@ -198,6 +253,32 @@ function NewVisitContent() {
           </div>
         </div>
       </div>
+
+      {hasOpenLoad && effectiveTruckStock.size > 0 && (
+        <div className="bg-white border-b border-border px-3 py-2">
+          <div className="text-[10px] text-muted font-cairo mb-1.5">🚚 المتبقي بالسيارة الآن</div>
+          <div className="flex flex-wrap gap-1.5">
+            {Array.from(effectiveTruckStock.entries()).map(([pid, qty]) => {
+              const p = productMap.get(pid);
+              if (!p) return null;
+              const isLow  = qty < 5 && qty > 0;
+              const isOut  = qty <= 0;
+              return (
+                <span
+                  key={pid}
+                  className={`text-[11px] font-cairo px-2 py-1 rounded-full border ${
+                    isOut ? "bg-red-50 text-danger border-red-200 font-bold" :
+                    isLow ? "bg-orange-50 text-warn border-orange-200 font-bold" :
+                            "bg-info-bg text-primary-dk border-border"
+                  }`}
+                >
+                  {p.name_ar}: {qty} {p.base_unit === "L" ? "لتر" : p.base_unit === "kg" ? "كغم" : "حبة"}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="px-4 pt-3 grid grid-cols-3 gap-2">
         <button
@@ -341,6 +422,7 @@ function NewVisitContent() {
         lineType={pickerType}
         products={products}
         replacementDebt={effectiveReplacementDebt}
+        truckStock={hasOpenLoad ? effectiveTruckStock : undefined}
       />
     </div>
   );
