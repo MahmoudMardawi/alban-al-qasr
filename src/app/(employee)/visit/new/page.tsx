@@ -40,6 +40,11 @@ function NewVisitContent() {
   const [submitting, startSubmit] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  // Payment mode at visit close: cash = full payment, credit = آجل, partial = some now
+  type PayMode = "cash" | "credit" | "partial";
+  const [payMode, setPayMode] = useState<PayMode>("cash");
+  const [partialAmount, setPartialAmount] = useState<string>("");
+
   useEffect(() => {
     if (!clientId) return;
     const supabase = createClient();
@@ -127,11 +132,24 @@ function NewVisitContent() {
     setLines((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  function resolvePaymentAmount(): number {
+    if (payMode === "cash")    return total;
+    if (payMode === "credit")  return 0;
+    const parsed = Number(partialAmount);
+    if (!Number.isFinite(parsed) || parsed < 0) return 0;
+    return Math.min(parsed, total);
+  }
+
   function confirm() {
     setError(null);
+    const payment_amount = resolvePaymentAmount();
+    if (payMode === "partial" && payment_amount <= 0) {
+      setError("أدخل مبلغ الدفعة الجزئية");
+      return;
+    }
     startSubmit(async () => {
       try {
-        const res = await createVisitWithLines({ client_id: clientId, lines });
+        const res = await createVisitWithLines({ client_id: clientId, lines, payment_amount });
         if (res?.error) {
           setError(res.error);
           return;
@@ -227,12 +245,82 @@ function NewVisitContent() {
         )}
       </div>
 
-      {lines.length > 0 && (
+      {lines.length > 0 && total > 0 && (
         <div className="px-4 mt-4">
+          <h3 className="font-cairo font-semibold text-muted text-xs mb-2">طريقة الدفع</h3>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => setPayMode("cash")}
+              className={`rounded-xl p-3 font-cairo font-bold text-xs border-2 transition ${
+                payMode === "cash"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-ink border-border"
+              }`}
+            >
+              💵 نقدًا الآن
+            </button>
+            <button
+              type="button"
+              onClick={() => setPayMode("partial")}
+              className={`rounded-xl p-3 font-cairo font-bold text-xs border-2 transition ${
+                payMode === "partial"
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-ink border-border"
+              }`}
+            >
+              ½ دفعة جزئية
+            </button>
+            <button
+              type="button"
+              onClick={() => setPayMode("credit")}
+              className={`rounded-xl p-3 font-cairo font-bold text-xs border-2 transition ${
+                payMode === "credit"
+                  ? "bg-warn text-white border-warn"
+                  : "bg-white text-warn border-orange-200"
+              }`}
+            >
+              📒 آجل (ذمم)
+            </button>
+          </div>
+
+          {payMode === "partial" && (
+            <div className="mb-3">
+              <label className="block text-[11px] text-muted font-cairo mb-1">المبلغ المدفوع الآن (₪)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.5"
+                min="0"
+                max={total}
+                value={partialAmount}
+                onChange={(e) => setPartialAmount(e.target.value)}
+                placeholder={`من أصل ${formatCurrency(total)}`}
+                className="w-full rounded-xl border border-border bg-white px-4 py-3 text-ink font-cairo text-base focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {lines.length > 0 && (
+        <div className="px-4 mt-2">
           <div className="bg-forest text-white rounded-xl p-3 flex items-center justify-between">
-            <span className="font-cairo text-sm opacity-90">المطلوب تحصيله الآن</span>
+            <span className="font-cairo text-sm opacity-90">
+              {payMode === "credit" ? "الإجمالي (آجل بالكامل)"
+               : payMode === "partial" ? "الإجمالي"
+               : "المطلوب تحصيله الآن"}
+            </span>
             <span className="font-cairo font-extrabold text-xl">{formatCurrency(total)}</span>
           </div>
+
+          {payMode === "partial" && Number(partialAmount) > 0 && (
+            <div className="mt-2 bg-info-bg rounded-xl p-2.5 flex items-center justify-between text-xs font-cairo">
+              <span className="text-muted">المتبقي على الذمم</span>
+              <span className="text-warn font-bold">{formatCurrency(Math.max(0, total - Number(partialAmount)))}</span>
+            </div>
+          )}
+
           {error && (
             <div className="mt-2 rounded-xl bg-red-50 border border-red-200 text-danger text-xs p-2.5">{error}</div>
           )}

@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { type LucideIcon, Receipt, Factory, UserCog, BarChart3, ClipboardList, Download, Sparkles, Bell, LogOut } from "lucide-react";
+import { type LucideIcon, Receipt, Factory, UserCog, BarChart3, ClipboardList, Download, Sparkles, Bell, Truck, LogOut } from "lucide-react";
 
 interface Props { open: boolean; onClose: () => void }
 
 interface MoreItem { href: string; label: string; icon: LucideIcon; disabled?: boolean }
 
 const ITEMS: MoreItem[] = [
+  { href: "/load",       label: "تحميل السيارة",            icon: Truck },
   { href: "/expenses",   label: "المصاريف",                icon: Receipt },
   { href: "/production", label: "الإنتاج والفاقد",          icon: Factory },
   { href: "/users",      label: "الموظفين",                 icon: UserCog },

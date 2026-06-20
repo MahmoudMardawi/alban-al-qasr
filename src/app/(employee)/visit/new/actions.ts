@@ -5,10 +5,15 @@ import { logActivity } from "@/lib/activity-log";
 import { revalidatePath } from "next/cache";
 import type { DraftLine } from "@/lib/ledgers";
 
+export type PaymentMethod = "cash" | "transfer";
+
 export interface CreateVisitInput {
   client_id: string;
   lines: DraftLine[];
   notes?: string | null;
+  /** Amount the customer paid at the time of the visit. 0 = الزيارة آجل. */
+  payment_amount?: number;
+  payment_method?: PaymentMethod;
 }
 
 export interface CreateVisitResult {
@@ -55,6 +60,27 @@ export async function createVisitWithLines(input: CreateVisitInput): Promise<Cre
     return { error: linesErr.message };
   }
 
+  // If the customer paid at the visit, record the payment linked to this visit.
+  // 0 / undefined / null means آجل — leave it on the receivables (ذمم).
+  const paid = Number(input.payment_amount ?? 0);
+  if (paid > 0) {
+    // visit_id was added in migration 0009; the generated Database type doesn't
+    // include it yet. After running `npm run types:gen` this cast can go away.
+    const payload: Record<string, unknown> = {
+      client_id:   input.client_id,
+      amount:      paid,
+      method:      input.payment_method ?? "cash",
+      recorded_by: user.id,
+      visit_id:    visit.id,
+      note:        "دفعة مرفقة بالزيارة",
+    };
+    const { error: payErr } = await supabase.from("payments").insert(payload as never);
+    if (payErr) {
+      // Non-fatal — visit + lines exist. Receivables can be cleared later via /clients.
+      console.warn("[createVisitWithLines] payment insert failed:", payErr.message);
+    }
+  }
+
   const clientRes = await supabase.from("clients").select("name").eq("id", input.client_id).maybeSingle();
   const clientName = clientRes.data?.name ?? "(زبون)";
 
@@ -64,7 +90,7 @@ export async function createVisitWithLines(input: CreateVisitInput): Promise<Cre
     entity_type: "visit",
     entity_id:   visit.id,
     summary_ar:  `سجّل زيارة جديدة لـ ${clientName} (${input.lines.length} عنصر)`,
-    payload:     { client_id: visit.client_id, lines_count: input.lines.length },
+    payload:     { client_id: visit.client_id, lines_count: input.lines.length, payment_amount: paid },
   });
 
   revalidatePath("/");

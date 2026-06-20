@@ -16,6 +16,8 @@ interface ReceiptData {
   client_name: string;
   employee_name: string;
   lines: ReceiptLine[];
+  paid_amount?: number;
+  payment_method?: "cash" | "transfer";
 }
 
 const SECTION = {
@@ -29,6 +31,13 @@ export function ReceiptCard({ data }: { data: ReceiptData }) {
   const replacements  = data.lines.filter((l) => l.line_type === "replacement_out");
   const returns       = data.lines.filter((l) => l.line_type === "return_in");
   const total         = sales.reduce((s, l) => s + l.qty * (l.unit_price ?? 0), 0);
+
+  const paid       = Math.max(0, Number(data.paid_amount ?? 0));
+  const remaining  = Math.max(0, total - paid);
+  const isFullyPaid    = total > 0 && remaining === 0 && paid >= total;
+  const isPartiallyPaid = paid > 0 && remaining > 0;
+  const isFullyOnCredit = total > 0 && paid === 0;
+  const methodLabel = data.payment_method === "transfer" ? "تحويل بنكي" : "نقدًا";
 
   const brandName = process.env.NEXT_PUBLIC_BRAND_NAME ?? "ألبان وأجبان القصر";
   const brandArea = process.env.NEXT_PUBLIC_BRAND_AREA ?? "عرّابة — جنين";
@@ -80,8 +89,6 @@ export function ReceiptCard({ data }: { data: ReceiptData }) {
           </div>
           <div className="text-muted">الموظف:</div>
           <div className="text-ink font-semibold text-left">{data.employee_name}</div>
-          <div className="text-muted">رقم الزيارة:</div>
-          <div className="text-ink font-mono text-[10px] text-left">{data.visit_id.slice(0, 8)}</div>
         </div>
       </div>
 
@@ -91,9 +98,38 @@ export function ReceiptCard({ data }: { data: ReceiptData }) {
         <Section kind="return_in"       items={returns} />
 
         <div className="mt-4 bg-forest text-white rounded-xl p-4 flex items-center justify-between">
-          <span className="font-cairo text-sm opacity-90">المبلغ المستحق</span>
+          <span className="font-cairo text-sm opacity-90">إجمالي المبيعات</span>
           <span className="font-cairo font-extrabold text-2xl">{formatCurrency(total)}</span>
         </div>
+
+        {total > 0 && (
+          <div className="mt-3 space-y-2">
+            {isFullyPaid && (
+              <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 flex items-center justify-between font-cairo">
+                <span className="text-primary-dk text-sm font-semibold">✓ مدفوع بالكامل — {methodLabel}</span>
+                <span className="text-primary-dk font-bold text-base">{formatCurrency(paid)}</span>
+              </div>
+            )}
+            {isPartiallyPaid && (
+              <>
+                <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 flex items-center justify-between font-cairo">
+                  <span className="text-primary-dk text-sm font-semibold">💵 دفعة جزئية — {methodLabel}</span>
+                  <span className="text-primary-dk font-bold text-base">{formatCurrency(paid)}</span>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-center justify-between font-cairo">
+                  <span className="text-warn text-sm font-semibold">📒 المتبقي بالذمم</span>
+                  <span className="text-warn font-bold text-base">{formatCurrency(remaining)}</span>
+                </div>
+              </>
+            )}
+            {isFullyOnCredit && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-center justify-between font-cairo">
+                <span className="text-warn text-sm font-semibold">📒 الفاتورة آجل — تُحوّل بالكامل للذمم</span>
+                <span className="text-warn font-bold text-base">{formatCurrency(total)}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-6 border-t-2 border-dashed border-border pt-4 text-[11px] text-muted font-cairo text-center">
           توقيع المستلم: ____________________

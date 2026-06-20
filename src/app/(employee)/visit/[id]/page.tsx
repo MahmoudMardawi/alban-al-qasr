@@ -29,6 +29,19 @@ export default async function VisitReceipt({ params }: { params: Promise<{ id: s
 
   if (error || !visit) return notFound();
 
+  // Pull any payments linked to this visit (cash-at-delivery, partial payment, etc.)
+  // visit_id column comes from migration 0009; the generated types don't have it
+  // until `npm run types:gen` runs. Loose-cast the filter for now.
+  const paymentsTable = supabase.from("payments") as unknown as {
+    select: (cols: string) => {
+      eq: (col: string, val: string) => Promise<{ data: Array<{ amount: number; method: string }> | null }>;
+    };
+  };
+  const { data: paymentRows } = await paymentsTable.select("amount, method").eq("visit_id", id);
+  const paymentsForVisit = paymentRows ?? [];
+  const paidAmount    = paymentsForVisit.reduce((s, p) => s + Number(p.amount), 0);
+  const paymentMethod = paymentsForVisit[0]?.method as "cash" | "transfer" | undefined;
+
   type Line = NonNullable<typeof visit.visit_lines>[number];
   const lines = (visit.visit_lines as Line[]).map((l) => ({
     line_type:        l.line_type as "sale" | "return_in" | "replacement_out",
@@ -50,11 +63,13 @@ export default async function VisitReceipt({ params }: { params: Promise<{ id: s
       </div>
       <ReceiptCard
         data={{
-          visit_id:      visit.id,
-          visited_at:    visit.visited_at,
-          client_name:  (visit.clients as unknown as { name: string } | null)?.name ?? "?",
-          employee_name:(visit.users as unknown as { full_name: string } | null)?.full_name ?? "?",
+          visit_id:       visit.id,
+          visited_at:     visit.visited_at,
+          client_name:   (visit.clients as unknown as { name: string } | null)?.name ?? "?",
+          employee_name: (visit.users as unknown as { full_name: string } | null)?.full_name ?? "?",
           lines,
+          paid_amount:    paidAmount,
+          payment_method: paymentMethod,
         }}
       />
     </div>
