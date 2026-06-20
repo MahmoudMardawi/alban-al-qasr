@@ -39,12 +39,22 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     <div className="pb-4">
       <h2 className="font-cairo font-bold text-ink text-base px-4 py-3">📊 التقارير</h2>
 
-      <div className="px-4 mb-3">
+      <div className="px-4 mb-3 space-y-2">
         <Link href="/reports/accountant" className="block bg-gradient-to-l from-primary to-primary-dk text-white rounded-xl p-3 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <div className="font-cairo font-bold text-sm">📋 التقرير المحاسبي الشهري</div>
               <div className="text-[11px] opacity-80 font-cairo mt-0.5">مبيعات نقد/آجل، تحصيلات، مصاريف بالتفصيل، تسوية التحميل، صافي ربح</div>
+            </div>
+            <span className="text-xl opacity-80">‹</span>
+          </div>
+        </Link>
+
+        <Link href="/reports/receivables" className="block bg-gradient-to-l from-warn to-orange-600 text-white rounded-xl p-3 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-cairo font-bold text-sm">💸 تقرير الذمم — من يدين لي؟</div>
+              <div className="text-[11px] opacity-90 font-cairo mt-0.5">قائمة الزبائن المدينين مرتّبة من الأسوأ، مع اتصال + واتساب تذكير</div>
             </div>
             <span className="text-xl opacity-80">‹</span>
           </div>
