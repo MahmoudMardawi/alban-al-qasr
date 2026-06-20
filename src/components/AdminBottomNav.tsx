@@ -15,7 +15,7 @@ const PRIMARY = [
 export function AdminBottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
-  const moreActive = ["/expenses", "/production", "/users", "/reports", "/inventory", "/export", "/ai", "/activity", "/load"]
+  const moreActive = ["/expenses", "/production", "/users", "/reports", "/inventory", "/export", "/ai", "/activity", "/load", "/payments"]
     .some((p) => pathname.startsWith(p));
 
   return (

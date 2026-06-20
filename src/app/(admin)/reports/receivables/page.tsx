@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, AlertTriangle, Phone, Calendar } from "lucide-react";
+import { ArrowRight, AlertTriangle, Phone, Calendar, Banknote } from "lucide-react";
 import { getReceivablesReport, type ReceivableRow } from "@/lib/receivables-data";
 import { formatCurrency, formatDateShort } from "@/lib/format";
 import { PrintButton } from "@/components/PrintButton";
@@ -92,11 +92,25 @@ export default async function ReceivablesReportPage() {
                     </div>
                   </div>
 
+                  <div className="mt-2 grid grid-cols-2 gap-2 print:hidden">
+                    <Link
+                      href={`/payments/new?client=${r.client_id}`}
+                      className="flex items-center justify-center gap-1 bg-primary text-white text-xs font-cairo font-bold py-2 rounded-lg"
+                    >
+                      <Banknote size={12} /> تحصيل
+                    </Link>
+                    <Link
+                      href={`/visit/new?client=${r.client_id}`}
+                      className="flex items-center justify-center gap-1 bg-info-bg text-primary-dk border border-border text-xs font-cairo font-bold py-2 rounded-lg"
+                    >
+                      <Calendar size={12} /> زيارة
+                    </Link>
+                  </div>
                   {r.client_phone && (
-                    <div className="mt-2 flex gap-2 print:hidden">
+                    <div className="mt-1.5 grid grid-cols-2 gap-2 print:hidden">
                       <a
                         href={`tel:${r.client_phone}`}
-                        className="flex-1 flex items-center justify-center gap-1 bg-primary text-white text-xs font-cairo font-bold py-2 rounded-lg"
+                        className="flex items-center justify-center gap-1 bg-white text-primary border border-primary text-xs font-cairo font-bold py-2 rounded-lg"
                       >
                         <Phone size={12} /> اتصل
                       </a>
@@ -104,16 +118,10 @@ export default async function ReceivablesReportPage() {
                         href={`https://wa.me/${encodeURIComponent(r.client_phone.replace(/[^0-9+]/g, ""))}?text=${encodeURIComponent(`السلام عليكم،\nنود تذكيركم بأن لدينا رصيد مستحق بقيمة ${r.balance_owed.toFixed(2)} ₪. شكراً لتعاونكم.`)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1 bg-white text-primary border border-primary text-xs font-cairo font-bold py-2 rounded-lg"
+                        className="flex items-center justify-center gap-1 bg-white text-primary border border-primary text-xs font-cairo font-bold py-2 rounded-lg"
                       >
                         💬 واتساب
                       </a>
-                      <Link
-                        href={`/visit/new?client=${r.client_id}`}
-                        className="flex-1 flex items-center justify-center gap-1 bg-info-bg text-primary-dk border border-border text-xs font-cairo font-bold py-2 rounded-lg"
-                      >
-                        <Calendar size={12} /> زيارة
-                      </Link>
                     </div>
                   )}
                 </li>
