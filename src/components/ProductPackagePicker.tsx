@@ -49,6 +49,23 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
     return products.filter((p) => (replacementDebt.get(p.id) ?? 0) > 0);
   }, [products, lineType, replacementDebt]);
 
+  // ===== Validation: requested qty must fit on the truck + within replacement debt =====
+  const selectedPkg = selected && packageId ? selected.packages.find((x) => x.id === packageId) ?? null : null;
+  const requestedBaseQty = selected && qtyValid
+    ? calcBaseQty(parsedQty, selectedPkg ? { contains_qty: selectedPkg.contains_qty } : null)
+    : 0;
+
+  const enforceTruck = selected && truckStock && (lineType === "sale" || lineType === "replacement_out");
+  const truckRemaining = enforceTruck ? (truckStock!.get(selected!.id) ?? 0) : Infinity;
+  const exceedsTruck   = enforceTruck && requestedBaseQty > truckRemaining;
+
+  const enforceDebt = selected && lineType === "replacement_out" && replacementDebt;
+  const debtAvailable = enforceDebt ? (replacementDebt!.get(selected!.id) ?? 0) : Infinity;
+  const exceedsDebt   = enforceDebt && requestedBaseQty > debtAvailable;
+
+  const blockedByValidation = exceedsTruck || exceedsDebt;
+  const canConfirm = qtyValid && !blockedByValidation;
+
   if (!open) return null;
 
   function pickProduct(p: ProductForPicker) {
@@ -58,7 +75,7 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
   }
 
   function confirm() {
-    if (!selected || !qtyValid) return;
+    if (!selected || !canConfirm) return;
     const pkg = packageId ? selected.packages.find((x) => x.id === packageId) ?? null : null;
     const baseQty = calcBaseQty(parsedQty, pkg ? { contains_qty: pkg.contains_qty } : null);
     const unitPrice =
@@ -210,22 +227,39 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
                   onFocus={(e) => e.currentTarget.select()}
                   placeholder="مثال: 3"
                   className={`flex-1 rounded-xl border bg-surface px-3 py-2 text-ink text-center font-cairo focus:outline-none focus:ring-2 ${
-                    !qtyValid && qtyTouched
+                    (!qtyValid && qtyTouched) || blockedByValidation
                       ? "border-danger focus:ring-danger"
                       : "border-border focus:ring-primary"
                   }`}
                 />
               </div>
+              {selectedPkg && (
+                <p className="text-[10px] text-muted font-cairo mt-1 text-end">
+                  = {formatQty(requestedBaseQty, selected!.base_unit)} (وحدة أساسية)
+                </p>
+              )}
               {!qtyValid && qtyTouched && (
                 <p className="text-danger text-[11px] font-cairo mt-1.5">
                   أدخل كمية أكبر من صفر
                 </p>
               )}
+              {exceedsTruck && (
+                <div className="mt-2 rounded-xl bg-red-50 border border-red-200 text-danger text-xs p-2.5 font-cairo">
+                  ⚠ الكمية المطلوبة ({formatQty(requestedBaseQty, selected!.base_unit)}) تفوق المتبقي بالسيارة ({formatQty(truckRemaining, selected!.base_unit)}).
+                  <br />
+                  إما خفّض الكمية، أو سجّل تحميلًا إضافيًا، أو اعتذر للزبون.
+                </div>
+              )}
+              {exceedsDebt && !exceedsTruck && (
+                <div className="mt-2 rounded-xl bg-red-50 border border-red-200 text-danger text-xs p-2.5 font-cairo">
+                  ⚠ الكمية المطلوبة ({formatQty(requestedBaseQty, selected!.base_unit)}) تفوق ما هو مستحق للزبون كبدل ({formatQty(debtAvailable, selected!.base_unit)}).
+                </div>
+              )}
             </div>
 
             <button
               onClick={confirm}
-              disabled={!qtyValid}
+              disabled={!canConfirm}
               className="w-full rounded-xl bg-primary text-white font-cairo font-bold py-3 shadow-sm hover:bg-primary-dk disabled:opacity-60 disabled:cursor-not-allowed"
             >
               إضافة إلى الزيارة
