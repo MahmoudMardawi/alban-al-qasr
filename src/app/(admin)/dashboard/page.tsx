@@ -3,7 +3,9 @@ import { StatTile } from "@/components/StatTile";
 import { RevenueLineChart } from "@/components/RevenueLineChart";
 import { ExpensePieChart } from "@/components/ExpensePieChart";
 import { TopRanked } from "@/components/TopRanked";
+import { TodaySnapshotPanel } from "@/components/TodaySnapshotPanel";
 import { getDashboardData } from "@/lib/dashboard-data";
+import { getTodaySnapshot } from "@/lib/today-snapshot-data";
 import { type Period } from "@/lib/periods";
 import { formatQty } from "@/lib/format";
 
@@ -14,10 +16,14 @@ const VALID_PERIODS: Period[] = ["daily", "weekly", "monthly", "yearly"];
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const sp = await searchParams;
   const period: Period = VALID_PERIODS.includes(sp.period as Period) ? (sp.period as Period) : "monthly";
-  const data = await getDashboardData(period);
+  const [data, todaySnap] = await Promise.all([
+    getDashboardData(period),
+    getTodaySnapshot(),
+  ]);
 
   return (
     <div className="pb-4">
+      <TodaySnapshotPanel snap={todaySnap} />
       <PeriodSwitcher current={period} />
 
       <div className="px-4 grid grid-cols-2 gap-2">
