@@ -11,9 +11,7 @@ export async function openCashBoxSession(input: { opening_float: number; notes?:
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "غير مسجّل دخول" };
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const db = supabase as unknown as { from: (t: string) => any };
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("cash_box_sessions")
     .insert({ employee_id: user.id, opening_float: input.opening_float, notes: input.notes ?? null })
     .select("id")
@@ -46,9 +44,7 @@ export async function closeCashBoxSession(input: { session_id: string; closing_a
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "غير مسجّل دخول" };
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const db = supabase as unknown as { from: (t: string) => any };
-  const { error } = await db
+  const { error } = await supabase
     .from("cash_box_sessions")
     .update({
       status:          "closed",

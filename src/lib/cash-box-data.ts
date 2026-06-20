@@ -37,11 +37,7 @@ function dayBoundsIso(date: string): { startIso: string; endIso: string } {
 
 export async function getCashBoxReconciliation(sessionId: string): Promise<CashBoxReconciliation | null> {
   const supabase = await createClient();
-  // cash_box_sessions comes from migration 0013 — not in generated types yet.
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const db = supabase as unknown as { from: (t: string) => any };
-
-  const { data: sess } = await db
+  const { data: sess } = await supabase
     .from("cash_box_sessions")
     .select("id, employee_id, session_date, status, opening_float, closing_actual, closed_at, notes, users(full_name)")
     .eq("id", sessionId)
@@ -130,9 +126,7 @@ export async function getCashBoxReconciliation(sessionId: string): Promise<CashB
 
 export async function listCashBoxSessions(scope: { employeeId?: string; date?: string }): Promise<CashBoxSession[]> {
   const supabase = await createClient();
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const db = supabase as unknown as { from: (t: string) => any };
-  let q = db.from("cash_box_sessions")
+  let q = supabase.from("cash_box_sessions")
     .select("id, employee_id, session_date, status, opening_float, closing_actual, closed_at, notes, users(full_name)")
     .order("session_date", { ascending: false })
     .order("created_at", { ascending: false })

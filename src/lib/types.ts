@@ -93,6 +93,50 @@ export type Database = {
           },
         ]
       }
+      cash_box_sessions: {
+        Row: {
+          closed_at: string | null
+          closing_actual: number | null
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          opening_float: number
+          session_date: string
+          status: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closing_actual?: number | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          opening_float?: number
+          session_date?: string
+          status?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closing_actual?: number | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          opening_float?: number
+          session_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_box_sessions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           added_by: string | null
