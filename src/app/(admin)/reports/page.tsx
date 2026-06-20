@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { getReportRows } from "@/lib/reports-data";
-import { formatCurrency, formatDateShort } from "@/lib/format";
+import { formatCurrency, formatDateShort, formatInvoiceNo } from "@/lib/format";
 import { BarChart3 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 
@@ -115,7 +115,12 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               <Link href={`/visit/${r.visit_id}`} className="block bg-white border border-border rounded-xl p-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-cairo font-semibold text-ink text-sm">{r.client_name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-cairo font-semibold text-ink text-sm">{r.client_name}</span>
+                      <span className="text-[10px] font-cairo font-bold text-primary-dk bg-primary/10 px-1.5 py-0.5 rounded" dir="ltr">
+                        {formatInvoiceNo(r.invoice_no)}
+                      </span>
+                    </div>
                     <div className="text-[10px] text-muted font-cairo mt-0.5">{formatDateShort(new Date(r.visited_at))} · {r.employee_name} · {r.line_count} عنصر</div>
                   </div>
                   <div className="font-cairo font-bold text-primary text-sm">{formatCurrency(r.sale_total)}</div>

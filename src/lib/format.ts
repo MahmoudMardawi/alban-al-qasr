@@ -12,6 +12,12 @@ export function formatQty(qty: number, unit: Unit): string {
   return qty === 1 ? `${qty} قطعة` : `${qty} قطع`;
 }
 
+/** Formats a sequential visit invoice number for human display. */
+export function formatInvoiceNo(no: number | string | null | undefined): string {
+  if (no === null || no === undefined || no === "") return "—";
+  return `#${String(no).padStart(4, "0")}`;
+}
+
 export function formatDateShort(date: Date): string {
   const dd   = String(date.getDate()).padStart(2, "0");
   const mm   = String(date.getMonth() + 1).padStart(2, "0");

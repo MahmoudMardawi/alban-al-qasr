@@ -9,6 +9,7 @@ export interface ReportFilters {
 
 export interface ReportRow {
   visit_id: string;
+  invoice_no: number;
   visited_at: string;
   client_id: string;
   client_name: string;
@@ -21,8 +22,10 @@ export interface ReportRow {
 
 export async function getReportRows(filters: ReportFilters): Promise<ReportRow[]> {
   const supabase = await createClient();
-  let q = supabase.from("visits")
-    .select("id, visited_at, client_id, employee_id, clients(name), users(full_name), visit_lines(qty, unit_price, line_type, product_id)")
+  // invoice_no from migration 0011 — not yet in generated types
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  let q = (supabase.from("visits") as any)
+    .select("id, invoice_no, visited_at, client_id, employee_id, clients(name), users(full_name), visit_lines(qty, unit_price, line_type, product_id)")
     .gte("visited_at", new Date(filters.start + "T00:00:00").toISOString())
     .lt("visited_at",  new Date(filters.end   + "T23:59:59.999Z").toISOString())
     .order("visited_at", { ascending: false });
@@ -32,7 +35,7 @@ export async function getReportRows(filters: ReportFilters): Promise<ReportRow[]
 
   const { data } = await q;
   type Row = {
-    id: string; visited_at: string; client_id: string;
+    id: string; invoice_no: number; visited_at: string; client_id: string;
     clients: { name: string } | null; users: { full_name: string } | null;
     visit_lines: Array<{ qty: number; unit_price: number | null; line_type: string; product_id: string }>;
   };
@@ -43,6 +46,7 @@ export async function getReportRows(filters: ReportFilters): Promise<ReportRow[]
       const lines = filters.productId ? v.visit_lines.filter((l) => l.product_id === filters.productId) : v.visit_lines;
       return {
         visit_id:           v.id,
+        invoice_no:         v.invoice_no,
         visited_at:         v.visited_at,
         client_id:          v.client_id,
         client_name:        v.clients?.name ?? "?",

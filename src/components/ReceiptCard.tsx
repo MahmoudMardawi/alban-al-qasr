@@ -1,4 +1,4 @@
-import { formatCurrency, formatQty, formatDateShort, type Unit } from "@/lib/format";
+import { formatCurrency, formatQty, formatDateShort, formatInvoiceNo, type Unit } from "@/lib/format";
 
 interface ReceiptLine {
   line_type: "sale" | "return_in" | "replacement_out";
@@ -12,6 +12,7 @@ interface ReceiptLine {
 
 interface ReceiptData {
   visit_id: string;
+  invoice_no?: number | null;
   visited_at: string;
   client_name: string;
   employee_name: string;
@@ -77,6 +78,11 @@ export function ReceiptCard({ data }: { data: ReceiptData }) {
         <div className="font-display text-2xl">{brandName}</div>
         <div className="text-xs opacity-80 mt-1">{brandArea}</div>
         <div className="text-[11px] opacity-70 mt-3 font-cairo">إيصال زيارة</div>
+        {data.invoice_no != null && (
+          <div className="mt-1 bg-white/15 rounded-full px-3 py-0.5 text-xs font-cairo font-bold" dir="ltr">
+            فاتورة {formatInvoiceNo(data.invoice_no)}
+          </div>
+        )}
       </div>
 
       <div className="p-4 bg-info-bg border-b border-border">

@@ -12,10 +12,14 @@ export default async function VisitReceipt({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: visit, error } = await supabase
-    .from("visits")
+  // invoice_no comes from migration 0011 — not in generated types until
+  // `npm run types:gen` runs. Loose-cast the select so the column is readable
+  // even though the typed schema doesn't know about it yet.
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const visitsTable = supabase.from("visits") as any;
+  const { data: visit, error } = await visitsTable
     .select(`
-      id, visited_at, client_id,
+      id, visited_at, client_id, invoice_no,
       visit_lines (
         line_type, qty, base_qty, unit_price, package_id,
         products ( name_ar, base_unit ),
@@ -60,6 +64,7 @@ export default async function VisitReceipt({ params }: { params: Promise<{ id: s
       <ReceiptCard
         data={{
           visit_id:       visit.id,
+          invoice_no:     visit.invoice_no,
           visited_at:     visit.visited_at,
           client_name:   (visit.clients as unknown as { name: string } | null)?.name ?? "?",
           employee_name: (visit.users as unknown as { full_name: string } | null)?.full_name ?? "?",
