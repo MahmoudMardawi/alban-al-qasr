@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { getAccountantReport } from "@/lib/accountant-report-data";
 import { formatCurrency, formatDateShort } from "@/lib/format";
 import { PrintButton } from "@/components/PrintButton";
+import { MonthPicker } from "./month-picker";
 
 export const dynamic = "force-dynamic";
 
@@ -43,23 +44,10 @@ export default async function AccountantReportPage({ searchParams }: { searchPar
       </div>
 
       {/* Picker — hidden in print */}
-      <form method="get" className="px-4 mb-3 print:hidden">
+      <div className="px-4 mb-3 print:hidden">
         <label className="block text-xs font-cairo text-muted mb-1">اختر الشهر</label>
-        <select
-          name="year-month"
-          defaultValue={`${year}-${month}`}
-          onChange={(e) => {
-            const target = e.target as HTMLSelectElement;
-            const [y, m] = target.value.split("-").map(Number);
-            window.location.href = `?year=${y}&month=${m}`;
-          }}
-          className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-cairo focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          {monthOptions.map((o) => (
-            <option key={o.label} value={`${o.year}-${o.month}`}>{o.label}</option>
-          ))}
-        </select>
-      </form>
+        <MonthPicker options={monthOptions} current={`${year}-${month}`} />
+      </div>
 
       {/* Printable area */}
       <div className="bg-white max-w-md mx-auto print:max-w-full px-4 py-4 print:px-8">
