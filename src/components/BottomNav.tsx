@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ClipboardList, Truck, User } from "lucide-react";
+import { Home, ClipboardList, Truck, Wallet, User } from "lucide-react";
 
 const items = [
   { href: "/",          label: "الزبائن",   icon: Home },
   { href: "/load",      label: "التحميل",   icon: Truck },
+  { href: "/cash-box",  label: "الصندوق",   icon: Wallet },
   { href: "/my-visits", label: "زياراتي",   icon: ClipboardList },
   { href: "/profile",   label: "حسابي",    icon: User },
 ] as const;
