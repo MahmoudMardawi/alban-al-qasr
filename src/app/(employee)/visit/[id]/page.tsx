@@ -12,12 +12,8 @@ export default async function VisitReceipt({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const supabase = await createClient();
 
-  // invoice_no comes from migration 0011 — not in generated types until
-  // `npm run types:gen` runs. Loose-cast the select so the column is readable
-  // even though the typed schema doesn't know about it yet.
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const visitsTable = supabase.from("visits") as any;
-  const { data: visit, error } = await visitsTable
+  const { data: visit, error } = await supabase
+    .from("visits")
     .select(`
       id, visited_at, client_id, invoice_no,
       visit_lines (

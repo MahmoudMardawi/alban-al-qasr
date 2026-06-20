@@ -22,9 +22,7 @@ export interface ReportRow {
 
 export async function getReportRows(filters: ReportFilters): Promise<ReportRow[]> {
   const supabase = await createClient();
-  // invoice_no from migration 0011 — not yet in generated types
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  let q = (supabase.from("visits") as any)
+  let q = supabase.from("visits")
     .select("id, invoice_no, visited_at, client_id, employee_id, clients(name), users(full_name), visit_lines(qty, unit_price, line_type, product_id)")
     .gte("visited_at", new Date(filters.start + "T00:00:00").toISOString())
     .lt("visited_at",  new Date(filters.end   + "T23:59:59.999Z").toISOString())

@@ -575,6 +575,7 @@ export type Database = {
           created_at: string
           employee_id: string
           id: string
+          invoice_no: number
           notes: string | null
           visited_at: string
         }
@@ -583,6 +584,7 @@ export type Database = {
           created_at?: string
           employee_id: string
           id?: string
+          invoice_no?: number
           notes?: string | null
           visited_at?: string
         }
@@ -591,6 +593,7 @@ export type Database = {
           created_at?: string
           employee_id?: string
           id?: string
+          invoice_no?: number
           notes?: string | null
           visited_at?: string
         }
