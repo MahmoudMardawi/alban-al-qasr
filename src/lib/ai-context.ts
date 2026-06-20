@@ -1,41 +1,86 @@
+export interface ProductSummary {
+  name: string;
+  units: number;
+  revenue: number;
+}
+
+export interface ReturnEntry {
+  product: string;
+  units: number;
+}
+
+export interface ExpenseCategoryEntry {
+  category: string;
+  amount: number;
+}
+
 export interface ClientBalance {
   name: string;
   money_owed: number;
   replacement_debt: Array<{ product: string; units: number }>;
 }
 
+export interface ProductCatalogEntry {
+  name: string;
+  base_unit: string;
+  base_price: number;
+  base_cost: number | null;
+  packages: Array<{ name: string; price: number; contains_qty: number }>;
+}
+
 export interface MonthBucket {
-  month: string;          // e.g. "2026-06" — ISO YYYY-MM (locale-neutral)
+  month: string;                                  // "YYYY-MM"
   sales: number;
   expenses: number;
-  netProfit: number;
+  waste_cost: number;
+  payments_received: number;
+  net_profit: number;
+  top_products: ProductSummary[];                 // top 5 by revenue
+  returns: ReturnEntry[];
+  expenses_by_category: ExpenseCategoryEntry[];
 }
 
 export interface RawAiData {
   periodLabel: string;
-  sales: number;
-  expenses: number;
-  netProfit: number;
-  salesByProduct: Array<{ name: string; units: number; revenue: number }>;
-  topClients:     Array<{ name: string; revenue: number }>;
-  returns:        Array<{ product: string; units: number }>;
-  expensesByCategory: Array<{ category: string; amount: number }>;
+  today: string;                                  // ISO date string YYYY-MM-DD
+  yearTotals: {
+    sales: number;
+    expenses: number;
+    waste_cost: number;
+    payments_received: number;
+    net_profit: number;
+  };
+  topProductsYear: ProductSummary[];
+  topClientsYear: Array<{ name: string; revenue: number }>;
+  returnsYear: ReturnEntry[];
+  expensesByCategoryYear: ExpenseCategoryEntry[];
+  monthlyHistory: MonthBucket[];
   clientBalances?: ClientBalance[];
-  // Last 12 months of {month, sales, expenses, netProfit}, oldest first.
-  // Enables month-over-month, year-over-year, and trend questions.
-  monthlyHistory?: MonthBucket[];
+  replacementDebtByProduct?: ReturnEntry[];       // aggregate across all clients
+  productsCatalog?: ProductCatalogEntry[];
+  activeClientsCount?: number;
 }
 
 export interface AiContext {
   period: string;
-  totals: { sales: number; expenses: number; net_profit: number };
-  top_products: Array<{ name: string; units: number; revenue: number }>;
-  top_clients:  Array<{ name: string; revenue: number }>;
-  returns:      Array<{ product: string; units: number }>;
-  expenses_by_category: Array<{ category: string; amount: number }>;
+  today: string;
+  year_totals: {
+    sales: number;
+    expenses: number;
+    waste_cost: number;
+    payments_received: number;
+    net_profit: number;
+  };
+  top_products_year: ProductSummary[];
+  top_clients_year: Array<{ name: string; revenue: number }>;
+  returns_year: ReturnEntry[];
+  expenses_by_category_year: ExpenseCategoryEntry[];
+  monthly_breakdown: MonthBucket[];
   clients_with_outstanding_balance?: ClientBalance[];
   total_outstanding_money?: number;
-  monthly_breakdown?: Array<{ month: string; sales: number; expenses: number; net_profit: number }>;
+  total_replacement_debt_by_product?: ReturnEntry[];
+  products_catalog?: ProductCatalogEntry[];
+  active_clients_count?: number;
 }
 
 export function shapeContextForAI(raw: RawAiData): AiContext {
@@ -45,23 +90,26 @@ export function shapeContextForAI(raw: RawAiData): AiContext {
   const totalOutstanding = balances.reduce((s, b) => s + (b.money_owed > 0 ? b.money_owed : 0), 0);
 
   return {
-    period:      raw.periodLabel,
-    totals:      { sales: raw.sales, expenses: raw.expenses, net_profit: raw.netProfit },
-    top_products: raw.salesByProduct.slice(0, 10),
-    top_clients:  raw.topClients.slice(0, 10),
-    returns:      raw.returns,
-    expenses_by_category: raw.expensesByCategory,
+    period: raw.periodLabel,
+    today: raw.today,
+    year_totals: raw.yearTotals,
+    top_products_year: raw.topProductsYear.slice(0, 10),
+    top_clients_year:  raw.topClientsYear.slice(0, 10),
+    returns_year: raw.returnsYear,
+    expenses_by_category_year: raw.expensesByCategoryYear,
+    monthly_breakdown: raw.monthlyHistory,
     ...(balances.length > 0 ? {
-      clients_with_outstanding_balance: sortedByDebt.slice(0, 10),
+      clients_with_outstanding_balance: sortedByDebt.slice(0, 15),
       total_outstanding_money: totalOutstanding,
     } : {}),
-    ...(raw.monthlyHistory && raw.monthlyHistory.length > 0 ? {
-      monthly_breakdown: raw.monthlyHistory.map((m) => ({
-        month:      m.month,
-        sales:      m.sales,
-        expenses:   m.expenses,
-        net_profit: m.netProfit,
-      })),
+    ...(raw.replacementDebtByProduct && raw.replacementDebtByProduct.length > 0 ? {
+      total_replacement_debt_by_product: raw.replacementDebtByProduct,
+    } : {}),
+    ...(raw.productsCatalog && raw.productsCatalog.length > 0 ? {
+      products_catalog: raw.productsCatalog,
+    } : {}),
+    ...(typeof raw.activeClientsCount === "number" ? {
+      active_clients_count: raw.activeClientsCount,
     } : {}),
   };
 }
