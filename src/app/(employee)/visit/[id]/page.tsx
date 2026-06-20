@@ -29,15 +29,11 @@ export default async function VisitReceipt({ params }: { params: Promise<{ id: s
 
   if (error || !visit) return notFound();
 
-  // Pull any payments linked to this visit (cash-at-delivery, partial payment, etc.)
-  // visit_id column comes from migration 0009; the generated types don't have it
-  // until `npm run types:gen` runs. Loose-cast the filter for now.
-  const paymentsTable = supabase.from("payments") as unknown as {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => Promise<{ data: Array<{ amount: number; method: string }> | null }>;
-    };
-  };
-  const { data: paymentRows } = await paymentsTable.select("amount, method").eq("visit_id", id);
+  // Payments linked to this visit (cash-at-delivery, partial payment, etc.)
+  const { data: paymentRows } = await supabase
+    .from("payments")
+    .select("amount, method")
+    .eq("visit_id", id);
   const paymentsForVisit = paymentRows ?? [];
   const paidAmount    = paymentsForVisit.reduce((s, p) => s + Number(p.amount), 0);
   const paymentMethod = paymentsForVisit[0]?.method as "cash" | "transfer" | undefined;

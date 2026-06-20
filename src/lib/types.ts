@@ -58,6 +58,41 @@ export type Database = {
           },
         ]
       }
+      ai_chats: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          owner_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          owner_id: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          owner_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chats_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           added_by: string | null
@@ -159,6 +194,7 @@ export type Database = {
           note: string | null
           paid_at: string
           recorded_by: string | null
+          visit_id: string | null
         }
         Insert: {
           amount: number
@@ -168,6 +204,7 @@ export type Database = {
           note?: string | null
           paid_at?: string
           recorded_by?: string | null
+          visit_id?: string | null
         }
         Update: {
           amount?: number
@@ -177,6 +214,7 @@ export type Database = {
           note?: string | null
           paid_at?: string
           recorded_by?: string | null
+          visit_id?: string | null
         }
         Relationships: [
           {
@@ -191,6 +229,13 @@ export type Database = {
             columns: ["recorded_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
             referencedColumns: ["id"]
           },
         ]
@@ -358,6 +403,86 @@ export type Database = {
           name_en?: string | null
         }
         Relationships: []
+      }
+      truck_load_items: {
+        Row: {
+          id: string
+          load_id: string
+          note: string | null
+          product_id: string
+          qty_loaded: number
+          qty_returned: number
+        }
+        Insert: {
+          id?: string
+          load_id: string
+          note?: string | null
+          product_id: string
+          qty_loaded: number
+          qty_returned?: number
+        }
+        Update: {
+          id?: string
+          load_id?: string
+          note?: string | null
+          product_id?: string
+          qty_loaded?: number
+          qty_returned?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "truck_load_items_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "truck_loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "truck_load_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      truck_loads: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          loaded_at: string
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          loaded_at?: string
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          loaded_at?: string
+          notes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "truck_loads_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {

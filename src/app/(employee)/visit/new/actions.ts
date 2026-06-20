@@ -64,17 +64,14 @@ export async function createVisitWithLines(input: CreateVisitInput): Promise<Cre
   // 0 / undefined / null means آجل — leave it on the receivables (ذمم).
   const paid = Number(input.payment_amount ?? 0);
   if (paid > 0) {
-    // visit_id was added in migration 0009; the generated Database type doesn't
-    // include it yet. After running `npm run types:gen` this cast can go away.
-    const payload: Record<string, unknown> = {
+    const { error: payErr } = await supabase.from("payments").insert({
       client_id:   input.client_id,
       amount:      paid,
       method:      input.payment_method ?? "cash",
       recorded_by: user.id,
       visit_id:    visit.id,
       note:        "دفعة مرفقة بالزيارة",
-    };
-    const { error: payErr } = await supabase.from("payments").insert(payload as never);
+    });
     if (payErr) {
       // Non-fatal — visit + lines exist. Receivables can be cleared later via /clients.
       console.warn("[createVisitWithLines] payment insert failed:", payErr.message);

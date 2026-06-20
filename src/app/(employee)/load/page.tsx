@@ -36,9 +36,6 @@ export default async function LoadPage() {
     return <div className="p-6 text-center text-muted font-cairo text-sm">سجّل دخول أولاً</div>;
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const db = supabase as unknown as { from: (t: string) => any };
-
   const productsRes = await supabase.from("products")
     .select("id, name_ar, base_unit")
     .eq("is_active", true)
@@ -49,21 +46,20 @@ export default async function LoadPage() {
   const today = new Date();
   const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-  const openLoadRes = await db.from("truck_loads")
+  const openLoadRes = await supabase.from("truck_loads")
     .select("id, loaded_at")
     .eq("employee_id", user.id)
     .eq("status", "open")
     .eq("loaded_at", todayDate)
     .maybeSingle();
-  const openLoad = openLoadRes.data as { id: string; loaded_at: string } | null;
+  const openLoad = openLoadRes.data;
 
   let view: OpenLoadView | null = null;
   if (openLoad) {
-    const itemsRes = await db.from("truck_load_items")
+    const itemsRes = await supabase.from("truck_load_items")
       .select("product_id, qty_loaded, qty_returned")
       .eq("load_id", openLoad.id);
-    type ItemRow = { product_id: string; qty_loaded: number; qty_returned: number };
-    const itemRows = (itemsRes.data ?? []) as ItemRow[];
+    const itemRows = itemsRes.data ?? [];
 
     const productMap = new Map(products.map((p) => [p.id, p]));
     const items: OpenLoadItem[] = itemRows.map((r) => {
@@ -99,12 +95,12 @@ export default async function LoadPage() {
   }
 
   // Recent closed loads (last 7 days) for history view
-  const recentRes = await db.from("truck_loads")
+  const recentRes = await supabase.from("truck_loads")
     .select("id, loaded_at, closed_at, status")
     .eq("employee_id", user.id)
     .order("loaded_at", { ascending: false })
     .limit(7);
-  const recent = (recentRes.data ?? []) as Array<{ id: string; loaded_at: string; closed_at: string | null; status: string }>;
+  const recent = recentRes.data ?? [];
 
   return (
     <div className="pb-4">

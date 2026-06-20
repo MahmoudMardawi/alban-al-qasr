@@ -43,21 +43,18 @@ export async function getAccountantReport(year: number, month: number): Promise<
   const supabase = await createClient();
   const { start, end } = monthRange(year, month);
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const db = supabase as unknown as { from: (t: string) => any };
-
   const [visitsRes, paymentsRes, expensesRes, prodRes, loadsRes] = await Promise.all([
     supabase.from("visits")
       .select("id, visited_at, visit_lines(line_type, qty, unit_price, base_qty, product_id, products(name_ar, base_cost, base_price))")
       .gte("visited_at", start.toISOString()).lt("visited_at", end.toISOString()),
-    db.from("payments")
+    supabase.from("payments")
       .select("amount, paid_at, visit_id, method")
       .gte("paid_at", start.toISOString()).lt("paid_at", end.toISOString()),
     supabase.from("expenses").select("category, amount, spent_at")
       .gte("spent_at", start.toISOString()).lt("spent_at", end.toISOString()),
     supabase.from("production").select("qty_wasted, produced_at, products(base_cost)")
       .gte("produced_at", start.toISOString()).lt("produced_at", end.toISOString()),
-    db.from("truck_loads")
+    supabase.from("truck_loads")
       .select("id, loaded_at, status, employee_id, truck_load_items(product_id, qty_loaded, qty_returned, products(name_ar))")
       .gte("loaded_at", start.toISOString().slice(0, 10))
       .lt("loaded_at",  end.toISOString().slice(0, 10))
