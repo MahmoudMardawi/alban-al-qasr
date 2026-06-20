@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { getAccountantReport } from "@/lib/accountant-report-data";
 import { formatCurrency, formatDateShort } from "@/lib/format";
 import { PrintButton } from "@/components/PrintButton";
-import { MonthPicker } from "./month-picker";
+import { DateRangePicker } from "@/components/DateRangePicker";
 
 export const dynamic = "force-dynamic";
 
@@ -15,24 +15,20 @@ const CATEGORY_AR: Record<string, string> = {
   other:  "متفرقات",
 };
 
+function defaultRange(): { start: string; end: string } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { start: isoDate(start), end: isoDate(now) };
+}
+
 export default async function AccountantReportPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const now = new Date();
-  const year  = Number(sp.year)  || now.getFullYear();
-  const month = Number(sp.month) || (now.getMonth() + 1);
+  const def = defaultRange();
+  const startIso = sp.start || def.start;
+  const endIso   = sp.end   || def.end;
 
-  const report = await getAccountantReport(year, month);
-
-  // Build a list of last 12 months for the picker
-  const monthOptions: Array<{ year: number; month: number; label: string }> = [];
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    monthOptions.push({
-      year:  d.getFullYear(),
-      month: d.getMonth() + 1,
-      label: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-    });
-  }
+  const report = await getAccountantReport(startIso, endIso);
 
   return (
     <div className="pb-4 print:pb-0">
@@ -43,17 +39,15 @@ export default async function AccountantReportPage({ searchParams }: { searchPar
         <PrintButton />
       </div>
 
-      {/* Picker — hidden in print */}
-      <div className="px-4 mb-3 print:hidden">
-        <label className="block text-xs font-cairo text-muted mb-1">اختر الشهر</label>
-        <MonthPicker options={monthOptions} current={`${year}-${month}`} />
+      <div className="print:hidden">
+        <DateRangePicker start={startIso} end={endIso} showPresets />
       </div>
 
       {/* Printable area */}
       <div className="bg-white max-w-md mx-auto print:max-w-full px-4 py-4 print:px-8">
         <div className="text-center mb-4 print:mb-6">
-          <h1 className="font-display text-xl text-ink">التقرير المحاسبي الشهري</h1>
-          <div className="font-cairo text-sm text-muted mt-1">{report.month}</div>
+          <h1 className="font-display text-xl text-ink">التقرير المحاسبي</h1>
+          <div className="font-cairo text-sm text-muted mt-1">{report.label}</div>
           <div className="font-cairo text-[10px] text-muted mt-0.5" dir="ltr">
             {formatDateShort(report.start)} → {formatDateShort(new Date(report.end.getTime() - 1))}
           </div>
@@ -109,7 +103,7 @@ export default async function AccountantReportPage({ searchParams }: { searchPar
 
         {/* Truck loads */}
         {report.truck_loads_summary.length > 0 && (
-          <Section title="٥. تسوية تحميل السيارة (الأشهر المُغلقة فقط)">
+          <Section title="٥. تسوية تحميل السيارة (التحميلات المُغلقة فقط)">
             <table className="w-full text-xs font-cairo border-collapse">
               <thead>
                 <tr className="bg-info-bg text-muted">

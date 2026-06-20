@@ -1,19 +1,25 @@
 import Link from "next/link";
 import { ArrowRight, AlertTriangle, ShoppingCart, Banknote, Truck } from "lucide-react";
-import { PeriodSwitcher } from "@/components/PeriodSwitcher";
+import { DateRangePicker } from "@/components/DateRangePicker";
 import { PrintButton } from "@/components/PrintButton";
 import { getEmployeePerformance } from "@/lib/employee-performance-data";
 import { formatCurrency, formatDateShort } from "@/lib/format";
-import { type Period } from "@/lib/periods";
 
 export const dynamic = "force-dynamic";
 
-const VALID: Period[] = ["daily", "weekly", "monthly", "yearly"];
+function defaultRange(): { start: string; end: string } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { start: isoDate(start), end: isoDate(now) };
+}
 
-export default async function EmployeePerformancePage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+export default async function EmployeePerformancePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const period: Period = VALID.includes(sp.period as Period) ? (sp.period as Period) : "monthly";
-  const report = await getEmployeePerformance(period);
+  const def = defaultRange();
+  const startIso = sp.start || def.start;
+  const endIso   = sp.end   || def.end;
+  const report = await getEmployeePerformance(startIso, endIso);
 
   return (
     <div className="pb-4 print:pb-0">
@@ -24,7 +30,9 @@ export default async function EmployeePerformancePage({ searchParams }: { search
         <PrintButton />
       </div>
 
-      <PeriodSwitcher current={period} />
+      <div className="print:hidden">
+        <DateRangePicker start={startIso} end={endIso} showPresets />
+      </div>
 
       <div className="bg-white max-w-md mx-auto print:max-w-full px-4 py-3 print:px-8">
         <div className="text-center mb-3">
@@ -99,10 +107,6 @@ export default async function EmployeePerformancePage({ searchParams }: { search
             ))}
           </ul>
         )}
-
-        <div className="mt-6 text-[10px] text-muted font-cairo text-center">
-          الفترة: {period === "daily" ? "اليوم" : period === "weekly" ? "هذا الأسبوع" : period === "monthly" ? "هذا الشهر" : "هذه السنة"}
-        </div>
       </div>
     </div>
   );

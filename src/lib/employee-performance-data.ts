@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { periodStartEnd, type Period } from "@/lib/periods";
 
 export interface EmployeePerformanceRow {
   employee_id: string;
@@ -18,7 +17,8 @@ export interface EmployeePerformanceRow {
 }
 
 export interface EmployeePerformanceReport {
-  period: Period;
+  startIso: string;
+  endIso: string;
   windowStart: Date;
   windowEnd: Date;
   rows: EmployeePerformanceRow[];
@@ -30,9 +30,16 @@ export interface EmployeePerformanceReport {
   };
 }
 
-export async function getEmployeePerformance(period: Period, ref: Date = new Date()): Promise<EmployeePerformanceReport> {
+function parseIso(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export async function getEmployeePerformance(startIso: string, endIso: string): Promise<EmployeePerformanceReport> {
   const supabase = await createClient();
-  const { start, end } = periodStartEnd(period, ref);
+  const start = parseIso(startIso);
+  const endInclusive = parseIso(endIso);
+  const end = new Date(endInclusive.getFullYear(), endInclusive.getMonth(), endInclusive.getDate() + 1);
 
   const [usersRes, visitsRes, paymentsRes, loadsRes] = await Promise.all([
     supabase.from("users").select("id, full_name, role").eq("is_active", true),
@@ -173,5 +180,5 @@ export async function getEmployeePerformance(period: Period, ref: Date = new Dat
     shortage:        rows.reduce((s, r) => s + r.total_shortage_units, 0),
   };
 
-  return { period, windowStart: start, windowEnd: end, rows, totals };
+  return { startIso, endIso, windowStart: start, windowEnd: end, rows, totals };
 }

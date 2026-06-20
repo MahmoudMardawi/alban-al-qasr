@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 export interface AccountantMonthlyReport {
-  month: string;                          // "YYYY-MM"
+  label: string;                          // human-readable range label
   start: Date;
   end: Date;
   // Revenue side
@@ -32,16 +32,19 @@ export interface AccountantMonthlyReport {
   visits_count: number;
 }
 
-function monthRange(year: number, month1to12: number): { start: Date; end: Date } {
-  return {
-    start: new Date(year, month1to12 - 1, 1),
-    end:   new Date(year, month1to12, 1),
-  };
+function parseIsoDate(iso: string): Date {
+  // iso is "YYYY-MM-DD" in user-local-equivalent date semantics
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
-export async function getAccountantReport(year: number, month: number): Promise<AccountantMonthlyReport> {
+export async function getAccountantReport(startIso: string, endIso: string): Promise<AccountantMonthlyReport> {
   const supabase = await createClient();
-  const { start, end } = monthRange(year, month);
+  const start = parseIsoDate(startIso);
+  // end is inclusive in the query — add 1 day so range covers the full last day
+  const endInclusive = parseIsoDate(endIso);
+  const end = new Date(endInclusive.getFullYear(), endInclusive.getMonth(), endInclusive.getDate() + 1);
+  const label = startIso === endIso ? startIso : `${startIso} → ${endIso}`;
 
   const [visitsRes, paymentsRes, expensesRes, prodRes, loadsRes] = await Promise.all([
     supabase.from("visits")
@@ -168,7 +171,7 @@ export async function getAccountantReport(year: number, month: number): Promise<
   const netProfit = grossSales - returnsValue - wasteCost - totalExpenses;
 
   return {
-    month: `${year}-${String(month).padStart(2, "0")}`,
+    label,
     start, end,
     gross_sales: grossSales,
     cash_sales: cashSales,

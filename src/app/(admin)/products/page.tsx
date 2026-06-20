@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Plus, Package, Edit3 } from "lucide-react";
+import { Plus, Package } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
-import { formatCurrency, type Unit } from "@/lib/format";
+import { type Unit } from "@/lib/format";
+import { SearchableProductsList } from "@/components/SearchableProductsList";
 
 export const dynamic = "force-dynamic";
 
@@ -31,34 +32,12 @@ export default async function ProductsList() {
       {products.length === 0 ? (
         <EmptyState icon={Package} title="لا توجد منتجات بعد" subtitle="ابدأ بإضافة لبن، لبنة، جبنة..." ctaHref="/products/new" ctaLabel="إضافة أول منتج" />
       ) : (
-        <ul className="px-3 space-y-2">
-          {products.map((p) => {
-            const activePackages = p.product_packages.filter((pk) => pk.is_active);
-            return (
-              <li key={p.id}>
-                <Link href={`/products/${p.id}`} className="block bg-white border border-border rounded-2xl p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-cairo font-semibold text-ink text-sm">
-                      {p.name_ar}
-                      {!p.is_active && <span className="text-[9px] mr-2 text-muted font-cairo">(معطّل)</span>}
-                    </h3>
-                    <span className="text-primary text-xs font-cairo font-bold">
-                      {formatCurrency(p.base_price)} / {p.base_unit === "L" ? "لتر" : p.base_unit === "kg" ? "كيلو" : "قطعة"}
-                    </span>
-                  </div>
-                  {activePackages.length > 0 && (
-                    <p className="text-[10px] text-muted font-cairo">
-                      {activePackages.length} عبوة: {activePackages.map((pk) => `${pk.package_name} ${formatCurrency(pk.package_price)}`).join(" · ")}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-1 text-[10px] text-primary mt-1.5 font-cairo">
-                    <Edit3 size={11} /> تعديل
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <SearchableProductsList products={products.map((p) => ({
+          id: p.id, name_ar: p.name_ar, base_unit: p.base_unit, base_price: Number(p.base_price), is_active: p.is_active,
+          packages: p.product_packages.map((pk) => ({
+            id: pk.id, package_name: pk.package_name, package_price: Number(pk.package_price), is_active: pk.is_active,
+          })),
+        }))} />
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { ClientCard, type ClientCardData } from "@/components/ClientCard";
+import { type ClientCardData } from "@/components/ClientCard";
+import { SearchableEmployeeClientsList } from "@/components/SearchableEmployeeClientsList";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
@@ -75,13 +76,7 @@ export default async function EmployeeHome() {
           <Plus size={14} /> زبون جديد
         </Link>
       </div>
-      <div className="px-3">
-        {clients.length === 0 ? (
-          <p className="text-center text-muted text-sm py-12">لا يوجد زبائن بعد</p>
-        ) : (
-          clients.map((c) => <ClientCard key={c.id} client={c} />)
-        )}
-      </div>
+      <SearchableEmployeeClientsList clients={clients} />
     </div>
   );
 }

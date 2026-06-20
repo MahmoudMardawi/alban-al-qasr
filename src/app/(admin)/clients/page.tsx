@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Plus, Users, GitMerge } from "lucide-react";
 import { ClientApprovalCard } from "@/components/ClientApprovalCard";
 import { EmptyState } from "@/components/EmptyState";
+import { SearchableClientsList } from "@/components/SearchableClientsList";
 
 export const dynamic = "force-dynamic";
 
@@ -48,18 +49,9 @@ export default async function AdminClientsList() {
       {approved.length === 0 && pending.length === 0 ? (
         <EmptyState icon={Users} title="لا يوجد زبائن بعد" ctaHref="/clients/new" ctaLabel="إضافة أول زبون" />
       ) : approved.length > 0 && (
-        <ul className="px-3 space-y-2">
-          {approved.map((c) => (
-            <li key={c.id}>
-              <Link href={`/clients/${c.id}`} className="block bg-white border border-border rounded-2xl p-3">
-                <h3 className="font-cairo font-semibold text-ink text-sm">{c.name}</h3>
-                <p className="text-[10px] text-muted font-cairo mt-0.5">
-                  {c.type ?? "—"} · {c.phone ?? "بدون هاتف"} · {c.address ?? "بدون عنوان"}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <SearchableClientsList clients={approved.map((c) => ({
+          id: c.id, name: c.name, type: c.type, phone: c.phone, address: c.address,
+        }))} />
       )}
     </div>
   );
