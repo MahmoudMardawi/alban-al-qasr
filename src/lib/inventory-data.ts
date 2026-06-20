@@ -15,12 +15,29 @@ export interface ProductInventoryRow {
   closing:   number;
 }
 
+export interface OpenLoadSummary {
+  load_id: string;
+  loaded_at: string;
+  employee_name: string;
+  items: Array<{
+    product_id: string;
+    product_name: string;
+    qty_loaded: number;
+    qty_returned: number;
+    qty_sold: number;        // sold/distributed via visits today by this employee
+    qty_on_truck: number;    // loaded - returned - sold
+  }>;
+}
+
 export interface InventorySnapshot {
   period: Period;
   windowStart: Date;
   windowEnd: Date;
   rows: ProductInventoryRow[];
   prev: Map<string, ProductInventoryRow>;
+  openLoads: OpenLoadSummary[];
+  /** product_id -> sum of qty_on_truck across all open loads */
+  onTruckByProduct: Map<string, number>;
 }
 
 type SupabaseSrv = Awaited<ReturnType<typeof createClient>>;
@@ -66,6 +83,74 @@ async function buildRow(
   };
 }
 
+async function fetchOpenLoads(supabase: SupabaseSrv): Promise<OpenLoadSummary[]> {
+  const { data: loadsData } = await supabase
+    .from("truck_loads")
+    .select(`
+      id, loaded_at, employee_id,
+      users(full_name),
+      truck_load_items(product_id, qty_loaded, qty_returned, products(name_ar))
+    `)
+    .eq("status", "open")
+    .order("loaded_at", { ascending: false });
+
+  type LoadRow = {
+    id: string;
+    loaded_at: string;
+    employee_id: string;
+    users: { full_name: string } | null;
+    truck_load_items: Array<{
+      product_id: string;
+      qty_loaded: number;
+      qty_returned: number;
+      products: { name_ar: string } | null;
+    }>;
+  };
+  const loads = (loadsData ?? []) as unknown as LoadRow[];
+  if (loads.length === 0) return [];
+
+  const summaries: OpenLoadSummary[] = [];
+  for (const load of loads) {
+    const dayStart = new Date(load.loaded_at + "T00:00:00").toISOString();
+    const dayEnd   = new Date(new Date(load.loaded_at + "T00:00:00").getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const { data: visitsData } = await supabase
+      .from("visits")
+      .select("visit_lines(product_id, base_qty, line_type)")
+      .eq("employee_id", load.employee_id)
+      .gte("visited_at", dayStart)
+      .lt("visited_at", dayEnd);
+    type V = { visit_lines: Array<{ product_id: string; base_qty: number; line_type: string }> };
+    const visits = (visitsData ?? []) as unknown as V[];
+
+    const soldByProduct = new Map<string, number>();
+    for (const v of visits) for (const l of v.visit_lines) {
+      if (l.line_type === "sale" || l.line_type === "replacement_out") {
+        soldByProduct.set(l.product_id, (soldByProduct.get(l.product_id) ?? 0) + Number(l.base_qty));
+      }
+    }
+
+    summaries.push({
+      load_id:       load.id,
+      loaded_at:     load.loaded_at,
+      employee_name: load.users?.full_name ?? "?",
+      items: load.truck_load_items.map((i) => {
+        const loaded   = Number(i.qty_loaded);
+        const returned = Number(i.qty_returned);
+        const sold     = soldByProduct.get(i.product_id) ?? 0;
+        return {
+          product_id:   i.product_id,
+          product_name: i.products?.name_ar ?? "?",
+          qty_loaded:   loaded,
+          qty_returned: returned,
+          qty_sold:     sold,
+          qty_on_truck: loaded - returned - sold,
+        };
+      }),
+    });
+  }
+  return summaries;
+}
+
 export async function getInventorySnapshot(period: Period, ref: Date = new Date()): Promise<InventorySnapshot> {
   const supabase = await createClient();
   const { start, end } = periodStartEnd(period, ref);
@@ -74,9 +159,17 @@ export async function getInventorySnapshot(period: Period, ref: Date = new Date(
   const { data: productsData } = await supabase.from("products").select("id, name_ar, base_unit").eq("is_active", true).order("name_ar");
   const products = (productsData ?? []) as Array<{ id: string; name_ar: string; base_unit: "L"|"kg"|"piece" }>;
 
-  const rows     = await Promise.all(products.map((p) => buildRow(supabase, p, start, end)));
-  const prevRows = await Promise.all(products.map((p) => buildRow(supabase, p, prevStart, prevEnd)));
-  const prevMap  = new Map<string, ProductInventoryRow>(prevRows.map((r) => [r.product_id, r]));
+  const [rows, prevRows, openLoads] = await Promise.all([
+    Promise.all(products.map((p) => buildRow(supabase, p, start, end))),
+    Promise.all(products.map((p) => buildRow(supabase, p, prevStart, prevEnd))),
+    fetchOpenLoads(supabase),
+  ]);
+  const prevMap = new Map<string, ProductInventoryRow>(prevRows.map((r) => [r.product_id, r]));
 
-  return { period, windowStart: start, windowEnd: end, rows, prev: prevMap };
+  const onTruckByProduct = new Map<string, number>();
+  for (const load of openLoads) for (const item of load.items) {
+    onTruckByProduct.set(item.product_id, (onTruckByProduct.get(item.product_id) ?? 0) + item.qty_on_truck);
+  }
+
+  return { period, windowStart: start, windowEnd: end, rows, prev: prevMap, openLoads, onTruckByProduct };
 }
