@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cairo, Amiri } from "next/font/google";
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -24,7 +25,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} ${amiri.variable}`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <NextTopLoader
+          color="#2d8659"
+          height={3}
+          showSpinner={false}
+          shadow="0 0 8px #2d8659, 0 0 4px #2d8659"
+        />
+        {children}
+      </body>
     </html>
   );
 }

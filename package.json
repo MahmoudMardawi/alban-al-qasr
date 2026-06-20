@@ -20,6 +20,7 @@
     "groq-sdk": "^1.2.1",
     "lucide-react": "^1.21.0",
     "next": "15.5.19",
+    "nextjs-toploader": "^3.9.17",
     "pdfmake": "^0.3.11",
     "react": "19.1.0",
     "react-dom": "19.1.0",
