@@ -27,6 +27,8 @@ interface OpenLoadView {
   items: OpenLoadItem[];
   /** sold today from this load's products (qty in base units) */
   soldByProduct: Map<string, number>;
+  /** damaged returns recorded from customers today (qty in base units) */
+  damagedByProduct: Map<string, number>;
 }
 
 export default async function LoadPage() {
@@ -73,7 +75,9 @@ export default async function LoadPage() {
       };
     });
 
-    // Compute what's been sold today by this employee for these products
+    // Compute today's visit activity for this employee:
+    //   sold/bonus/replacement → leaves truck (drives shortage math)
+    //   return_in (damaged) → coming back to factory, tracked separately
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
     const endOfDay   = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
     const visitsRes = await supabase.from("visits")
@@ -84,14 +88,16 @@ export default async function LoadPage() {
     type Vlite = { visit_lines: Array<{ product_id: string; base_qty: number; line_type: string }> };
     const visits = (visitsRes.data ?? []) as unknown as Vlite[];
 
-    const soldByProduct = new Map<string, number>();
+    const soldByProduct    = new Map<string, number>();
+    const damagedByProduct = new Map<string, number>();
     for (const v of visits) for (const l of v.visit_lines) {
-      // Sale + replacement_out both reduce truck stock (replacement is physically given out)
-      if (l.line_type === "sale" || l.line_type === "replacement_out") {
+      if (l.line_type === "sale" || l.line_type === "replacement_out" || l.line_type === "bonus") {
         soldByProduct.set(l.product_id, (soldByProduct.get(l.product_id) ?? 0) + Number(l.base_qty));
+      } else if (l.line_type === "return_in") {
+        damagedByProduct.set(l.product_id, (damagedByProduct.get(l.product_id) ?? 0) + Number(l.base_qty));
       }
     }
-    view = { id: openLoad.id, loaded_at: openLoad.loaded_at, items, soldByProduct };
+    view = { id: openLoad.id, loaded_at: openLoad.loaded_at, items, soldByProduct, damagedByProduct };
   }
 
   // Recent closed loads (last 7 days) for history view

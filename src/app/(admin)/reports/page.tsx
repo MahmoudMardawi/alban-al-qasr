@@ -79,6 +79,16 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             <span className="text-xl opacity-80">‹</span>
           </div>
         </Link>
+
+        <Link href="/reports/damaged-returns" className="block bg-gradient-to-l from-warn to-red-600 text-white rounded-xl p-3 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-cairo font-bold text-sm">↩️ تقرير المرتجع التالف</div>
+              <div className="text-[11px] opacity-90 font-cairo mt-0.5">تفاصيل المرتجع لكل صنف ولكل زبون مع القيم الإجمالية</div>
+            </div>
+            <span className="text-xl opacity-80">‹</span>
+          </div>
+        </Link>
       </div>
 
       <DateRangePicker start={start} end={end} />

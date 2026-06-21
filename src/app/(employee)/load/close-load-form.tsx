@@ -18,6 +18,7 @@ interface LoadView {
   loaded_at: string;
   items: LoadItem[];
   soldByProduct: Map<string, number>;
+  damagedByProduct: Map<string, number>;
 }
 
 export function CloseLoadForm({ load }: { load: LoadView }) {
@@ -40,14 +41,20 @@ export function CloseLoadForm({ load }: { load: LoadView }) {
     });
   }
 
+  // Shortage math: loaded − sold − returned-unsold = remaining/lost
+  // Damaged returns (from customers) are tracked separately — they don't affect this.
   const rows = useMemo(() => load.items.map((i) => {
-    const sold = load.soldByProduct.get(i.product_id) ?? 0;
-    const ret  = Number(returns.get(i.product_id) ?? 0);
-    const balance = i.qty_loaded - sold - ret;
-    return { ...i, sold, ret, balance };
+    const sold     = load.soldByProduct.get(i.product_id) ?? 0;
+    const damaged  = load.damagedByProduct.get(i.product_id) ?? 0;
+    const ret      = Number(returns.get(i.product_id) ?? 0);
+    const balance  = i.qty_loaded - sold - ret;
+    const returnEntered = returns.has(i.product_id) || i.qty_returned > 0;
+    return { ...i, sold, damaged, ret, balance, returnEntered };
   }), [load, returns]);
 
-  const totalShortage = rows.reduce((s, r) => s + r.balance, 0);
+  const totalBalance = rows.reduce((s, r) => s + r.balance, 0);
+  const totalDamaged = rows.reduce((s, r) => s + r.damaged, 0);
+  const anyReturnEntered = rows.some((r) => r.returnEntered);
 
   function submit() {
     setError(null);
@@ -55,7 +62,6 @@ export function CloseLoadForm({ load }: { load: LoadView }) {
       product_id,
       qty_returned: Number(raw),
     }));
-    // Include zero-returns for products that were on the load so we explicitly mark them.
     for (const i of load.items) {
       if (!returns.has(i.product_id)) payload.push({ product_id: i.product_id, qty_returned: 0 });
     }
@@ -70,11 +76,12 @@ export function CloseLoadForm({ load }: { load: LoadView }) {
   return (
     <div>
       <div className="bg-info-bg border border-border rounded-xl p-3 mb-3 text-xs font-cairo text-muted leading-relaxed">
-        💡 <strong className="text-ink">كيف يعمل التسوية:</strong>{" "}
-        <span className="text-ink">المُحَمَّل</span> هو ما حمّلته صباحاً ·{" "}
-        <span className="text-ink">الموزَّع</span> هو ما بعته أو سلّمته بدلاً اليوم ·{" "}
-        <span className="text-ink">المُرتجَع</span> هو ما رجع للمصنع نهاية اليوم ·{" "}
-        <span className="text-ink">الفرق</span> يجب أن يكون صفراً (وإلا فقدان)
+        💡 <strong className="text-ink">كيف يعمل التسوية:</strong><br />
+        <span className="text-ink">المُحَمَّل</span> = كمية حُمّلت صباحاً ·{" "}
+        <span className="text-ink">المُوزَّع</span> = ما بعته أو سلّمته مجاناً اليوم ·{" "}
+        <span className="text-ink">غير مُباع</span> = كميات راجعة للمصنع من السيارة (سليمة)<br />
+        <span className="text-ink">مرتجع تالف</span> = ما رجع من الزبائن (يعرض تلقائيًا، يدار من /reports/damaged-returns) ·{" "}
+        <span className="text-ink">الفرق</span> = المُحَمَّل − المُوزَّع − غير المُباع. الصفر معناه تطابق تام.
       </div>
 
       <ul className="space-y-2">
@@ -84,10 +91,17 @@ export function CloseLoadForm({ load }: { load: LoadView }) {
               <div className="font-cairo font-bold text-sm text-ink">{r.product_name}</div>
               <div className={`text-xs font-cairo font-bold ${
                 r.balance === 0 ? "text-primary-dk"
-                : r.balance > 0 ? "text-warn"
-                : "text-danger"
+                : r.balance > 0
+                  ? r.returnEntered ? "text-danger" : "text-info"
+                  : "text-warn"
               }`}>
-                {r.balance === 0 ? "✓ مُسوّى" : r.balance > 0 ? `فقدان: ${formatQty(r.balance, r.product_unit)}` : `زيادة: ${formatQty(-r.balance, r.product_unit)}`}
+                {r.balance === 0
+                  ? "✓ مُسوّى"
+                  : r.balance > 0
+                    ? r.returnEntered
+                      ? `فقدان: ${formatQty(r.balance, r.product_unit)}`
+                      : `متبقي بالسيارة: ${formatQty(r.balance, r.product_unit)}`
+                    : `زيادة: ${formatQty(-r.balance, r.product_unit)}`}
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
@@ -100,7 +114,7 @@ export function CloseLoadForm({ load }: { load: LoadView }) {
                 <div className="bg-info-bg rounded-lg py-1.5 text-sm font-cairo font-bold text-primary-dk">{r.sold}</div>
               </div>
               <div>
-                <div className="text-[9px] text-muted font-cairo mb-0.5">المُرتجَع</div>
+                <div className="text-[9px] text-muted font-cairo mb-0.5">غير مُباع</div>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -114,16 +128,24 @@ export function CloseLoadForm({ load }: { load: LoadView }) {
                 />
               </div>
               <div>
-                <div className="text-[9px] text-muted font-cairo mb-0.5">الفرق</div>
+                <div className="text-[9px] text-muted font-cairo mb-0.5">{r.returnEntered ? "الفرق" : "متبقي"}</div>
                 <div className={`rounded-lg py-1.5 text-sm font-cairo font-bold ${
                   r.balance === 0 ? "bg-primary/10 text-primary-dk"
-                  : r.balance > 0 ? "bg-orange-50 text-warn"
-                  : "bg-red-50 text-danger"
+                  : r.balance > 0
+                    ? r.returnEntered ? "bg-red-50 text-danger" : "bg-cyan-50 text-info"
+                    : "bg-orange-50 text-warn"
                 }`}>
                   {r.balance}
                 </div>
               </div>
             </div>
+
+            {r.damaged > 0 && (
+              <div className="mt-2 bg-orange-50 border border-orange-200 rounded-lg px-2.5 py-1.5 text-[11px] font-cairo flex items-center justify-between">
+                <span className="text-warn">↩️ مرتجع تالف من زبائن اليوم</span>
+                <span className="text-warn font-bold">{formatQty(r.damaged, r.product_unit)}</span>
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -141,9 +163,15 @@ export function CloseLoadForm({ load }: { load: LoadView }) {
 
       {error && <div className="mt-3 rounded-xl bg-red-50 border border-red-200 text-danger text-xs p-2.5 font-cairo">{error}</div>}
 
-      <div className="mt-4 bg-forest text-white rounded-xl p-3 flex items-center justify-between">
-        <span className="font-cairo text-sm opacity-90">إجمالي الفرق</span>
-        <span className={`font-cairo font-extrabold text-lg ${totalShortage === 0 ? "" : "text-orange-200"}`}>{totalShortage}</span>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="bg-forest text-white rounded-xl p-3 flex items-center justify-between">
+          <span className="font-cairo text-xs opacity-90">{anyReturnEntered ? "إجمالي الفرق" : "متبقي بالسيارة"}</span>
+          <span className="font-cairo font-extrabold text-lg">{totalBalance}</span>
+        </div>
+        <div className="bg-warn text-white rounded-xl p-3 flex items-center justify-between">
+          <span className="font-cairo text-xs opacity-90">إجمالي تالف اليوم</span>
+          <span className="font-cairo font-extrabold text-lg">{totalDamaged}</span>
+        </div>
       </div>
 
       <button
