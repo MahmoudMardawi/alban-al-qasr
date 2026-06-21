@@ -19,7 +19,6 @@ export function NewPaymentForm({
   const router = useRouter();
   const [clientId, setClientId] = useState(initialClientId ?? "");
   const [amount, setAmount] = useState(prefillAmount > 0 ? String(prefillAmount) : "");
-  const [method, setMethod] = useState<"cash" | "transfer" | "other">("cash");
   const [note, setNote] = useState("");
   const [paidAt, setPaidAt] = useState(() => {
     const d = new Date();
@@ -44,7 +43,7 @@ export function NewPaymentForm({
       const res = await recordStandalonePayment({
         client_id: clientId,
         amount:    amt,
-        method,
+        method:    "cash",
         note:      note.trim() || null,
         paid_at:   paidAt,
       });
@@ -94,26 +93,6 @@ export function NewPaymentForm({
             الرصيد المستحق على الزبون: <strong className="text-warn">{formatCurrency(prefillAmount)}</strong>
           </p>
         )}
-      </div>
-
-      <div>
-        <label className="block text-xs font-cairo text-muted mb-1">طريقة الدفع *</label>
-        <div className="grid grid-cols-3 gap-2">
-          {(["cash", "transfer", "other"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMethod(m)}
-              className={`rounded-xl py-2.5 font-cairo font-bold text-xs border-2 transition ${
-                method === m
-                  ? "bg-primary text-white border-primary"
-                  : "bg-white text-ink border-border"
-              }`}
-            >
-              {m === "cash" ? "💵 نقدًا" : m === "transfer" ? "🏦 تحويل" : "أخرى"}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div>

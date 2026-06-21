@@ -68,7 +68,7 @@ export default async function ReceivablesReportPage() {
                 <li key={r.client_id} className={`${meta.bg} border rounded-xl p-3`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <Link href={`/clients/${r.client_id}`} className="font-cairo font-bold text-ink text-sm hover:underline">
+                      <Link href={`/clients/${r.client_id}/statement`} className="font-cairo font-bold text-ink text-sm hover:underline">
                         {showWarning && <AlertTriangle size={14} className="inline text-danger me-1" />}
                         {r.client_name}
                       </Link>

@@ -69,6 +69,16 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             <span className="text-xl opacity-80">‹</span>
           </div>
         </Link>
+
+        <Link href="/reports/client-statements" className="block bg-gradient-to-l from-info to-cyan-700 text-white rounded-xl p-3 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-cairo font-bold text-sm">📒 كشف حساب الزبائن</div>
+              <div className="text-[11px] opacity-90 font-cairo mt-0.5">مدين / دائن / رصيد جاري — اختر زبون لعرض حركاته كاملة</div>
+            </div>
+            <span className="text-xl opacity-80">‹</span>
+          </div>
+        </Link>
       </div>
 
       <DateRangePicker start={start} end={end} />

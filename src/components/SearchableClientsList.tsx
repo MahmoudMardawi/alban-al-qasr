@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Search, X, ShoppingCart } from "lucide-react";
+import { Search, X, ShoppingCart, FileText } from "lucide-react";
 
 export interface SearchableClientRow {
   id: string;
@@ -55,20 +55,33 @@ export function SearchableClientsList({ clients }: { clients: SearchableClientRo
 
       <ul className="px-3 space-y-2">
         {filtered.map((c) => (
-          <li key={c.id} className="bg-white border border-border rounded-2xl p-3 flex items-center justify-between gap-2">
-            <Link href={`/clients/${c.id}`} className="flex-1 min-w-0">
+          <li key={c.id} className="bg-white border border-border rounded-2xl p-3">
+            <Link href={`/clients/${c.id}/statement`} className="block mb-2">
               <h3 className="font-cairo font-semibold text-ink text-sm">{c.name}</h3>
               <p className="text-[10px] text-muted font-cairo mt-0.5 truncate">
                 {c.type ?? "—"} · {c.phone ?? "بدون هاتف"} · {c.address ?? "بدون عنوان"}
               </p>
             </Link>
-            <Link
-              href={`/visit/new?client=${c.id}`}
-              className="shrink-0 flex items-center gap-1 bg-primary text-white text-xs font-cairo font-bold px-3 py-2 rounded-xl"
-              aria-label="إنشاء زيارة"
-            >
-              <ShoppingCart size={12} /> بيع
-            </Link>
+            <div className="grid grid-cols-3 gap-1.5">
+              <Link
+                href={`/clients/${c.id}/statement`}
+                className="flex items-center justify-center gap-1 bg-info-bg text-primary-dk text-[11px] font-cairo font-bold px-2 py-1.5 rounded-lg border border-border"
+              >
+                <FileText size={11} /> كشف حساب
+              </Link>
+              <Link
+                href={`/visit/new?client=${c.id}`}
+                className="flex items-center justify-center gap-1 bg-primary text-white text-[11px] font-cairo font-bold px-2 py-1.5 rounded-lg"
+              >
+                <ShoppingCart size={11} /> بيع
+              </Link>
+              <Link
+                href={`/clients/${c.id}`}
+                className="flex items-center justify-center gap-1 bg-white text-muted text-[11px] font-cairo px-2 py-1.5 rounded-lg border border-border"
+              >
+                تعديل
+              </Link>
+            </div>
           </li>
         ))}
       </ul>
