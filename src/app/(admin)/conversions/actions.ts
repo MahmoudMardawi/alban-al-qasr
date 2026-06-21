@@ -22,9 +22,7 @@ export async function recordConversion(input: ConversionInput): Promise<{ error?
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "غير مسجّل دخول" };
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const db = supabase as unknown as { from: (t: string) => any };
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("product_conversions")
     .insert({
       source_product_id: input.source_product_id,

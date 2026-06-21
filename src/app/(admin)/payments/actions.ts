@@ -26,21 +26,18 @@ export async function recordStandalonePayment(input: RecordPaymentInput): Promis
 
   const kind = input.kind ?? "receipt";
 
-  // kind column from migration 0014 — not in generated types until db push + types:gen
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const insertPayload: any = {
-    client_id:   input.client_id,
-    amount:      input.amount,
-    method:      input.method,
-    kind,
-    paid_at:     input.paid_at ? new Date(input.paid_at).toISOString() : new Date().toISOString(),
-    recorded_by: user.id,
-    note:        input.note ?? null,
-    visit_id:    null,
-  };
   const { data, error } = await supabase
     .from("payments")
-    .insert(insertPayload)
+    .insert({
+      client_id:   input.client_id,
+      amount:      input.amount,
+      method:      input.method,
+      kind,
+      paid_at:     input.paid_at ? new Date(input.paid_at).toISOString() : new Date().toISOString(),
+      recorded_by: user.id,
+      note:        input.note ?? null,
+      visit_id:    null,
+    })
     .select("id")
     .single();
 

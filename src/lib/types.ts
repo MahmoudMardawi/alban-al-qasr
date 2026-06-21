@@ -234,6 +234,7 @@ export type Database = {
           amount: number
           client_id: string
           id: string
+          kind: string
           method: string
           note: string | null
           paid_at: string
@@ -244,6 +245,7 @@ export type Database = {
           amount: number
           client_id: string
           id?: string
+          kind?: string
           method?: string
           note?: string | null
           paid_at?: string
@@ -254,6 +256,7 @@ export type Database = {
           amount?: number
           client_id?: string
           id?: string
+          kind?: string
           method?: string
           note?: string | null
           paid_at?: string
@@ -326,6 +329,64 @@ export type Database = {
           {
             foreignKeyName: "period_closings_product_id_fkey"
             columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_conversions: {
+        Row: {
+          converted_at: string
+          created_at: string
+          id: string
+          notes: string | null
+          recorded_by: string | null
+          source_product_id: string
+          source_qty: number
+          target_product_id: string
+          target_qty: number
+        }
+        Insert: {
+          converted_at?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_by?: string | null
+          source_product_id: string
+          source_qty: number
+          target_product_id: string
+          target_qty: number
+        }
+        Update: {
+          converted_at?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_by?: string | null
+          source_product_id?: string
+          source_qty?: number
+          target_product_id?: string
+          target_qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_conversions_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_conversions_source_product_id_fkey"
+            columns: ["source_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_conversions_target_product_id_fkey"
+            columns: ["target_product_id"]
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]

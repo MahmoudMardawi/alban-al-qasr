@@ -75,15 +75,11 @@ export async function getClientStatement(clientId: string, startIso: string, end
   if (!clientData) return null;
 
   // Pull ALL transactions for this client (we filter by date in-memory and compute opening balance separately)
-  // 'kind' column from migration 0014 isn't in generated types yet
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const paymentsTable = supabase.from("payments") as any;
-
   const [visitsRes, paymentsRes] = await Promise.all([
     supabase.from("visits")
       .select("id, invoice_no, visited_at, visit_lines(line_type, qty, unit_price, base_qty, product_id, products(name_ar, base_price))")
       .eq("client_id", clientId),
-    paymentsTable
+    supabase.from("payments")
       .select("id, amount, paid_at, method, kind, note, visit_id")
       .eq("client_id", clientId),
   ]);
@@ -103,7 +99,7 @@ export async function getClientStatement(clientId: string, startIso: string, end
   };
   const visits = (visitsRes.data ?? []) as unknown as Visit[];
   type Pay = { id: string; amount: number; paid_at: string; method: string; kind: "receipt" | "disbursement"; note: string | null; visit_id: string | null };
-  const payments = (paymentsRes.data ?? []) as unknown as Pay[];
+  const payments = (paymentsRes.data ?? []) as Pay[];
 
   // Flatten into entries (one per movement)
   type RawEntry = { date: string; type: StatementEntryType; reference: string | null; note: string | null; debit: number; credit: number };

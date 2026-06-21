@@ -15,9 +15,8 @@ export default async function ConversionsPage() {
   type P = { id: string; name_ar: string; base_unit: Unit };
   const products = (productsData ?? []) as P[];
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const conversionsTable = (supabase.from as any)("product_conversions");
-  const { data: conversionsData } = await conversionsTable
+  const { data: conversionsData } = await supabase
+    .from("product_conversions")
     .select("id, source_qty, target_qty, converted_at, notes, source:source_product_id(name_ar, base_unit), target:target_product_id(name_ar, base_unit)")
     .order("converted_at", { ascending: false })
     .limit(30);

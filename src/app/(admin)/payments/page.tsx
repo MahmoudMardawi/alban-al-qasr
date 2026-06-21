@@ -14,9 +14,8 @@ const METHOD_AR: Record<string, string> = {
 
 export default async function PaymentsList() {
   const supabase = await createClient();
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const paymentsTable = supabase.from("payments") as any;
-  const { data } = await paymentsTable
+  const { data } = await supabase
+    .from("payments")
     .select("id, amount, paid_at, method, kind, note, visit_id, clients(name), visits(invoice_no)")
     .order("paid_at", { ascending: false })
     .limit(100);

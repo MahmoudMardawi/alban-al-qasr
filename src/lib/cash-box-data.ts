@@ -53,11 +53,8 @@ export async function getCashBoxReconciliation(sessionId: string): Promise<CashB
 
   const { startIso, endIso } = dayBoundsIso(s.session_date);
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const paymentsTable = supabase.from("payments") as any;
-
   const [paymentsRes, expensesRes, disbursementsRes] = await Promise.all([
-    paymentsTable
+    supabase.from("payments")
       .select("id, amount, paid_at, note, method, kind, clients(name), visits!inner(employee_id)")
       .gte("paid_at", startIso).lt("paid_at", endIso)
       .eq("method", "cash")
@@ -66,7 +63,7 @@ export async function getCashBoxReconciliation(sessionId: string): Promise<CashB
       .select("id, amount, spent_at, note, category, recorded_by")
       .gte("spent_at", startIso).lt("spent_at", endIso)
       .eq("recorded_by", s.employee_id),
-    paymentsTable
+    supabase.from("payments")
       .select("id, amount, paid_at, note, method, kind, clients(name), recorded_by")
       .gte("paid_at", startIso).lt("paid_at", endIso)
       .eq("method", "cash")
