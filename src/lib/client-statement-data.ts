@@ -75,12 +75,16 @@ export async function getClientStatement(clientId: string, startIso: string, end
   if (!clientData) return null;
 
   // Pull ALL transactions for this client (we filter by date in-memory and compute opening balance separately)
+  // 'kind' column from migration 0014 isn't in generated types yet
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const paymentsTable = supabase.from("payments") as any;
+
   const [visitsRes, paymentsRes] = await Promise.all([
     supabase.from("visits")
       .select("id, invoice_no, visited_at, visit_lines(line_type, qty, unit_price, base_qty, product_id, products(name_ar, base_price))")
       .eq("client_id", clientId),
-    supabase.from("payments")
-      .select("id, amount, paid_at, method, note, visit_id")
+    paymentsTable
+      .select("id, amount, paid_at, method, kind, note, visit_id")
       .eq("client_id", clientId),
   ]);
 
@@ -98,8 +102,8 @@ export async function getClientStatement(clientId: string, startIso: string, end
     }>;
   };
   const visits = (visitsRes.data ?? []) as unknown as Visit[];
-  type Pay = { id: string; amount: number; paid_at: string; method: string; note: string | null; visit_id: string | null };
-  const payments = (paymentsRes.data ?? []) as Pay[];
+  type Pay = { id: string; amount: number; paid_at: string; method: string; kind: "receipt" | "disbursement"; note: string | null; visit_id: string | null };
+  const payments = (paymentsRes.data ?? []) as unknown as Pay[];
 
   // Flatten into entries (one per movement)
   type RawEntry = { date: string; type: StatementEntryType; reference: string | null; note: string | null; debit: number; credit: number };
@@ -137,17 +141,26 @@ export async function getClientStatement(clientId: string, startIso: string, end
   }
 
   for (const p of payments) {
-    raw.push({
-      date: p.paid_at,
-      type: "receipt",
-      reference: p.visit_id ? "مرفق بفاتورة" : "تحصيل ذمم",
-      note: p.note,
-      debit: Number(p.amount),
-      credit: 0,
-    });
+    if (p.kind === "disbursement") {
+      raw.push({
+        date: p.paid_at,
+        type: "disbursement",
+        reference: "سند صرف",
+        note: p.note,
+        debit: 0,
+        credit: Number(p.amount),
+      });
+    } else {
+      raw.push({
+        date: p.paid_at,
+        type: "receipt",
+        reference: p.visit_id ? "مرفق بفاتورة" : "تحصيل ذمم",
+        note: p.note,
+        debit: Number(p.amount),
+        credit: 0,
+      });
+    }
   }
-
-  // TODO: when disbursements UI lands, query and push 'disbursement' rows here
 
   // Sort all entries chronologically
   raw.sort((a, b) => a.date.localeCompare(b.date));

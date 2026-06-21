@@ -5,10 +5,13 @@ import { logActivity } from "@/lib/activity-log";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+export type PaymentKind = "receipt" | "disbursement";
+
 export interface RecordPaymentInput {
   client_id: string;
   amount: number;
   method: "cash" | "transfer" | "other";
+  kind?: PaymentKind;
   paid_at?: string;        // ISO date; defaults to now
   note?: string | null;
 }
@@ -21,17 +24,23 @@ export async function recordStandalonePayment(input: RecordPaymentInput): Promis
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "غير مسجّل دخول" };
 
+  const kind = input.kind ?? "receipt";
+
+  // kind column from migration 0014 — not in generated types until db push + types:gen
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const insertPayload: any = {
+    client_id:   input.client_id,
+    amount:      input.amount,
+    method:      input.method,
+    kind,
+    paid_at:     input.paid_at ? new Date(input.paid_at).toISOString() : new Date().toISOString(),
+    recorded_by: user.id,
+    note:        input.note ?? null,
+    visit_id:    null,
+  };
   const { data, error } = await supabase
     .from("payments")
-    .insert({
-      client_id:   input.client_id,
-      amount:      input.amount,
-      method:      input.method,
-      paid_at:     input.paid_at ? new Date(input.paid_at).toISOString() : new Date().toISOString(),
-      recorded_by: user.id,
-      note:        input.note ?? null,
-      visit_id:    null,
-    })
+    .insert(insertPayload)
     .select("id")
     .single();
 
@@ -42,15 +51,18 @@ export async function recordStandalonePayment(input: RecordPaymentInput): Promis
 
   await logActivity(supabase, {
     actor_id:    user.id,
-    action:      "payment_received",
+    action:      kind === "receipt" ? "payment_received" : "payment_disbursed",
     entity_type: "payment",
     entity_id:   data.id,
-    summary_ar:  `استلم تحصيل ${input.amount} ₪ من ${clientName} (سند قبض)`,
-    payload:     { client_id: input.client_id, amount: input.amount, method: input.method },
+    summary_ar:  kind === "receipt"
+      ? `استلم تحصيل ${input.amount} ₪ من ${clientName} (سند قبض)`
+      : `صرف للزبون ${input.amount} ₪ — ${clientName} (سند صرف)`,
+    payload:     { client_id: input.client_id, amount: input.amount, method: input.method, kind },
   });
 
   revalidatePath("/payments");
   revalidatePath(`/clients/${input.client_id}`);
+  revalidatePath(`/clients/${input.client_id}/statement`);
   revalidatePath("/reports/receivables");
   return { paymentId: data.id };
 }

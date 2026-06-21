@@ -17,9 +17,10 @@ const METHOD_AR: Record<string, string> = {
 export default async function PaymentReceiptVoucher({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("payments")
-    .select("id, amount, paid_at, method, note, visit_id, recorded_by, clients(name, phone), visits(invoice_no), users(full_name)")
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const paymentsTable = supabase.from("payments") as any;
+  const { data } = await paymentsTable
+    .select("id, amount, paid_at, method, kind, note, visit_id, recorded_by, clients(name, phone), visits(invoice_no), users(full_name)")
     .eq("id", id)
     .single();
 
@@ -30,6 +31,7 @@ export default async function PaymentReceiptVoucher({ params }: { params: Promis
     amount: number;
     paid_at: string;
     method: string;
+    kind: "receipt" | "disbursement";
     note: string | null;
     visit_id: string | null;
     clients: { name: string; phone: string | null } | null;
@@ -37,6 +39,7 @@ export default async function PaymentReceiptVoucher({ params }: { params: Promis
     users: { full_name: string } | null;
   };
   const p = data as unknown as Row;
+  const isDisbursement = p.kind === "disbursement";
 
   const brandName = process.env.NEXT_PUBLIC_BRAND_NAME ?? "ألبان وأجبان القصر";
   const brandArea = process.env.NEXT_PUBLIC_BRAND_AREA ?? "عرّابة — جنين";
@@ -56,13 +59,15 @@ export default async function PaymentReceiptVoucher({ params }: { params: Promis
 
       <div className="bg-white max-w-md mx-auto print:max-w-full">
         {/* Header */}
-        <div className="bg-gradient-to-b from-forest to-primary-dk text-white p-5 text-center flex flex-col items-center">
+        <div className={`bg-gradient-to-b text-white p-5 text-center flex flex-col items-center ${
+          isDisbursement ? "from-warn to-orange-600" : "from-forest to-primary-dk"
+        }`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/mark.svg" alt="" aria-hidden="true" className="h-16 w-16 mb-2" />
           <div className="font-display text-2xl">{brandName}</div>
           <div className="text-xs opacity-80 mt-1">{brandArea}</div>
           <div className="mt-3 bg-white/20 px-4 py-1.5 rounded-full">
-            <div className="font-cairo font-extrabold text-base">سند قبض</div>
+            <div className="font-cairo font-extrabold text-base">{isDisbursement ? "سند صرف" : "سند قبض"}</div>
           </div>
           <div className="text-[11px] opacity-80 mt-2 font-cairo" dir="ltr">رقم: {voucherRef}</div>
         </div>
@@ -89,10 +94,12 @@ export default async function PaymentReceiptVoucher({ params }: { params: Promis
           </div>
 
           {/* Body */}
-          <div className="bg-info-bg rounded-xl p-4 space-y-3 border border-border">
+          <div className={`rounded-xl p-4 space-y-3 border ${isDisbursement ? "bg-orange-50 border-orange-200" : "bg-info-bg border-border"}`}>
             <div className="font-cairo text-sm text-ink leading-loose">
-              استلمنا من السيد / المؤسسة:
-              <div className="font-bold text-base text-primary-dk mt-1">{p.clients?.name ?? "—"}</div>
+              {isDisbursement ? "صَرَفنا للسيد / المؤسسة:" : "استلمنا من السيد / المؤسسة:"}
+              <div className={`font-bold text-base mt-1 ${isDisbursement ? "text-warn" : "text-primary-dk"}`}>
+                {p.clients?.name ?? "—"}
+              </div>
               {p.clients?.phone && (
                 <div className="text-[11px] text-muted mt-0.5" dir="ltr">{p.clients.phone}</div>
               )}
@@ -100,24 +107,28 @@ export default async function PaymentReceiptVoucher({ params }: { params: Promis
 
             <div className="font-cairo text-sm text-ink leading-loose">
               مبلغًا وقدره:
-              <div className="font-extrabold text-xl text-primary mt-1" dir="ltr">{formatCurrency(Number(p.amount))}</div>
+              <div className={`font-extrabold text-xl mt-1 ${isDisbursement ? "text-warn" : "text-primary"}`} dir="ltr">
+                {formatCurrency(Number(p.amount))}
+              </div>
               <div className="text-[11px] text-muted mt-1">فقط {amountWords} لا غير</div>
             </div>
 
             <div className="font-cairo text-sm text-ink leading-loose">
               وذلك عن:
-              <div className="font-semibold text-sm mt-1">{p.note || "تسديد ذمم مستحقة"}</div>
+              <div className="font-semibold text-sm mt-1">
+                {p.note || (isDisbursement ? "صَرف للزبون" : "تسديد ذمم مستحقة")}
+              </div>
             </div>
           </div>
 
           {/* Signatures */}
           <div className="mt-6 grid grid-cols-2 gap-4 text-[11px] text-muted font-cairo print:mt-12">
             <div className="border-t-2 border-dashed border-border pt-3 text-center">
-              توقيع المستلِم (المصنع):
+              {isDisbursement ? "توقيع المُسلِّم (المصنع):" : "توقيع المستلِم (المصنع):"}
               <br />____________________
             </div>
             <div className="border-t-2 border-dashed border-border pt-3 text-center">
-              توقيع الدافع (الزبون):
+              {isDisbursement ? "توقيع المستلِم (الزبون):" : "توقيع الدافع (الزبون):"}
               <br />____________________
             </div>
           </div>

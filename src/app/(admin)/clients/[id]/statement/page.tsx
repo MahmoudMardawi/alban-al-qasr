@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Edit3 } from "lucide-react";
+import { ArrowRight, Edit3, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { PrintButton } from "@/components/PrintButton";
 import { getClientStatement, defaultStatementRange, type StatementEntry } from "@/lib/client-statement-data";
@@ -49,6 +49,17 @@ export default async function ClientStatementPage({
 
       <div className="print:hidden">
         <DateRangePicker start={startIso} end={endIso} showPresets />
+      </div>
+
+      <div className="px-4 mb-3 print:hidden">
+        <div className="grid grid-cols-2 gap-2">
+          <Link href={`/payments/new?client=${id}`} className="flex items-center justify-center gap-1 bg-primary text-white text-xs font-cairo font-bold py-2.5 rounded-xl">
+            <ArrowDownToLine size={12} /> سند قبض
+          </Link>
+          <Link href={`/payments/disbursement/new?client=${id}`} className="flex items-center justify-center gap-1 bg-warn text-white text-xs font-cairo font-bold py-2.5 rounded-xl">
+            <ArrowUpFromLine size={12} /> سند صرف
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white max-w-3xl mx-auto print:max-w-full px-4 py-4 print:px-8">
