@@ -4,6 +4,38 @@ import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity-log";
 import { revalidatePath } from "next/cache";
 
+export async function recordRepExpense(input: { amount: number; category: "fuel" | "salary" | "rent" | "milk" | "other"; note?: string | null }): Promise<{ error?: string }> {
+  if (input.amount <= 0) return { error: "أدخل مبلغًا أكبر من صفر" };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "غير مسجّل دخول" };
+
+  const { data, error } = await supabase
+    .from("expenses")
+    .insert({
+      category:    input.category,
+      amount:      input.amount,
+      recorded_by: user.id,
+      note:        input.note ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) return { error: error?.message ?? "تعذّر حفظ السند" };
+
+  await logActivity(supabase, {
+    actor_id:    user.id,
+    action:      "rep_expense_recorded",
+    entity_type: "expense",
+    entity_id:   data.id,
+    summary_ar:  `صرف ${input.amount} ₪ من الصندوق (${input.category})`,
+    payload:     { category: input.category, amount: input.amount },
+  });
+
+  revalidatePath("/cash-box");
+  return {};
+}
+
 export async function openCashBoxSession(input: { opening_float: number; notes?: string | null }): Promise<{ error?: string; sessionId?: string }> {
   if (input.opening_float < 0) return { error: "الرصيد الافتتاحي لا يمكن أن يكون سالباً" };
 

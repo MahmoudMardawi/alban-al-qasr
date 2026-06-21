@@ -53,38 +53,58 @@ export async function getCashBoxReconciliation(sessionId: string): Promise<CashB
 
   const { startIso, endIso } = dayBoundsIso(s.session_date);
 
-  const [paymentsRes, expensesRes] = await Promise.all([
-    supabase.from("payments")
-      .select("id, amount, paid_at, note, method, clients(name), visits!inner(employee_id)")
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const paymentsTable = supabase.from("payments") as any;
+
+  const [paymentsRes, expensesRes, disbursementsRes] = await Promise.all([
+    paymentsTable
+      .select("id, amount, paid_at, note, method, kind, clients(name), visits!inner(employee_id)")
       .gte("paid_at", startIso).lt("paid_at", endIso)
-      .eq("method", "cash"),
+      .eq("method", "cash")
+      .eq("kind", "receipt"),
     supabase.from("expenses")
       .select("id, amount, spent_at, note, category, recorded_by")
       .gte("spent_at", startIso).lt("spent_at", endIso)
       .eq("recorded_by", s.employee_id),
+    paymentsTable
+      .select("id, amount, paid_at, note, method, kind, clients(name), recorded_by")
+      .gte("paid_at", startIso).lt("paid_at", endIso)
+      .eq("method", "cash")
+      .eq("kind", "disbursement")
+      .eq("recorded_by", s.employee_id),
   ]);
 
-  type Pay = { id: string; amount: number; paid_at: string; note: string | null; method: string; clients: { name: string } | null; visits: { employee_id: string } | null };
-  const allCashPayments = (paymentsRes.data ?? []) as unknown as Pay[];
-  // Filter to payments attached to a visit owned by this employee
-  const employeePayments = allCashPayments.filter((p) => p.visits?.employee_id === s.employee_id);
+  type Pay = { id: string; amount: number; paid_at: string; note: string | null; method: string; kind: string; clients: { name: string } | null; visits: { employee_id: string } | null };
+  const allCashReceipts = (paymentsRes.data ?? []) as unknown as Pay[];
+  const employeeReceipts = allCashReceipts.filter((p) => p.visits?.employee_id === s.employee_id);
+
+  type Disb = { id: string; amount: number; paid_at: string; note: string | null; method: string; kind: string; clients: { name: string } | null; recorded_by: string };
+  const disbursements = (disbursementsRes.data ?? []) as unknown as Disb[];
 
   type Exp = { id: string; amount: number; spent_at: string; note: string | null; category: string; recorded_by: string };
   const expenses = (expensesRes.data ?? []) as Exp[];
 
-  const cashCollected = employeePayments.reduce((sum, p) => sum + Number(p.amount), 0);
-  const cashSpent     = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const cashCollected = employeeReceipts.reduce((sum, p) => sum + Number(p.amount), 0);
+  const cashSpent     = expenses.reduce((sum, e) => sum + Number(e.amount), 0)
+                      + disbursements.reduce((sum, d) => sum + Number(d.amount), 0);
   const closingExpected = Number(s.opening_float) + cashCollected - cashSpent;
   const diff = s.closing_actual !== null ? closingExpected - Number(s.closing_actual) : null;
 
   const movements: CashBoxReconciliation["movements"] = [
     { kind: "opening" as const, label: "رصيد افتتاحي (فلوس فكّة)", amount: Number(s.opening_float), at: s.session_date },
-    ...employeePayments.map((p) => ({
+    ...employeeReceipts.map((p) => ({
       kind: "payment" as const,
       label: `قبض من ${p.clients?.name ?? "زبون"}${p.note ? ` · ${p.note}` : ""}`,
       amount: Number(p.amount),
       at: p.paid_at,
       ref_id: p.id,
+    })),
+    ...disbursements.map((d) => ({
+      kind: "expense" as const,
+      label: `صرف للزبون ${d.clients?.name ?? "—"}${d.note ? ` · ${d.note}` : ""}`,
+      amount: -Number(d.amount),
+      at: d.paid_at,
+      ref_id: d.id,
     })),
     ...expenses.map((e) => ({
       kind: "expense" as const,
