@@ -34,9 +34,12 @@ interface Props {
   /** Remaining qty per product currently on the employee's truck, in base units.
    *  Updates as draft lines are added. Only shown for sale + replacement_out modes. */
   truckStock?: Map<string, number>;
+  /** When true, skip the replacement-debt filter for replacement_out
+   *  (used for swap-on-return where any product can be the replacement). */
+  bypassDebtFilter?: boolean;
 }
 
-export function ProductPackagePicker({ open, onClose, onPick, lineType, products, replacementDebt, truckStock }: Props) {
+export function ProductPackagePicker({ open, onClose, onPick, lineType, products, replacementDebt, truckStock, bypassDebtFilter }: Props) {
   const [selected, setSelected] = useState<ProductForPicker | null>(null);
   const [packageId, setPackageId] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string>("1");
@@ -48,7 +51,7 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
 
   const filteredProducts = useMemo(() => {
     let list = products;
-    if (lineType === "replacement_out" && replacementDebt) {
+    if (lineType === "replacement_out" && replacementDebt && !bypassDebtFilter) {
       list = list.filter((p) => (replacementDebt.get(p.id) ?? 0) > 0);
     }
     const q = productSearch.trim().toLowerCase();
@@ -59,7 +62,7 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
       );
     }
     return list;
-  }, [products, lineType, replacementDebt, productSearch]);
+  }, [products, lineType, replacementDebt, bypassDebtFilter, productSearch]);
 
   // ===== Validation: requested qty must fit on the truck + within replacement debt =====
   const selectedPkg = selected && packageId ? selected.packages.find((x) => x.id === packageId) ?? null : null;
@@ -71,7 +74,7 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
   const truckRemaining = enforceTruck ? (truckStock!.get(selected!.id) ?? 0) : Infinity;
   const exceedsTruck   = enforceTruck && requestedBaseQty > truckRemaining;
 
-  const enforceDebt = selected && lineType === "replacement_out" && replacementDebt;
+  const enforceDebt = selected && lineType === "replacement_out" && replacementDebt && !bypassDebtFilter;
   const debtAvailable = enforceDebt ? (replacementDebt!.get(selected!.id) ?? 0) : Infinity;
   const exceedsDebt   = enforceDebt && requestedBaseQty > debtAvailable;
 
@@ -113,6 +116,7 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
     lineType === "sale"             ? "اختر منتج للبيع" :
     lineType === "return_in"        ? "اختر منتج تالف/مرتجع" :
     lineType === "bonus"            ? "اختر منتج للبونص (مجاناً)" :
+    bypassDebtFilter                ? "اختر صنف بديل (تبديل صنف بصنف)" :
                                       "اختر منتج للبدل";
 
   return (

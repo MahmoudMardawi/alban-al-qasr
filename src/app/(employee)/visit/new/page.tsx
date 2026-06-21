@@ -40,6 +40,7 @@ function NewVisitContent() {
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<LineType>("sale");
+  const [pickerBypassDebt, setPickerBypassDebt] = useState(false);
   const [submitting, startSubmit] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -174,8 +175,9 @@ function NewVisitContent() {
 
   const total = calcVisitTotal(lines);
 
-  function openPicker(type: LineType) {
+  function openPicker(type: LineType, bypassDebt = false) {
     setPickerType(type);
+    setPickerBypassDebt(bypassDebt);
     setPickerOpen(true);
   }
 
@@ -333,6 +335,18 @@ function NewVisitContent() {
             );
           })
         )}
+
+        {/* Swap-on-return: if there's at least one return_in line, offer a quick
+            'تبديل بصنف آخر' that opens the replacement picker without the debt filter */}
+        {lines.some((l) => l.line_type === "return_in") && (
+          <button
+            type="button"
+            onClick={() => openPicker("replacement_out", true)}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 bg-info-bg text-info border-2 border-dashed border-info/40 rounded-xl py-2.5 text-xs font-cairo font-bold hover:bg-info/10"
+          >
+            🔄 تبديل المرتجع بصنف آخر
+          </button>
+        )}
       </div>
 
       {lines.length > 0 && total > 0 && (
@@ -432,6 +446,7 @@ function NewVisitContent() {
         products={products}
         replacementDebt={effectiveReplacementDebt}
         truckStock={hasOpenLoad ? effectiveTruckStock : undefined}
+        bypassDebtFilter={pickerBypassDebt}
       />
     </div>
   );
