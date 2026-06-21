@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { Search, X as XIcon } from "lucide-react";
 import { calcBaseQty } from "@/lib/ledgers";
 import type { LineType } from "@/lib/ledgers";
 import { formatCurrency, formatQty, type Unit } from "@/lib/format";
@@ -39,15 +40,26 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
   const [selected, setSelected] = useState<ProductForPicker | null>(null);
   const [packageId, setPackageId] = useState<string | null>(null);
   const [qtyText, setQtyText] = useState<string>("1");
+  const [productSearch, setProductSearch] = useState("");
 
   const parsedQty = Number(qtyText);
   const qtyValid = qtyText.trim() !== "" && Number.isFinite(parsedQty) && parsedQty > 0;
   const qtyTouched = qtyText !== "1";
 
   const filteredProducts = useMemo(() => {
-    if (lineType !== "replacement_out" || !replacementDebt) return products;
-    return products.filter((p) => (replacementDebt.get(p.id) ?? 0) > 0);
-  }, [products, lineType, replacementDebt]);
+    let list = products;
+    if (lineType === "replacement_out" && replacementDebt) {
+      list = list.filter((p) => (replacementDebt.get(p.id) ?? 0) > 0);
+    }
+    const q = productSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter((p) =>
+        p.name_ar.toLowerCase().includes(q) ||
+        p.packages.some((pk) => pk.package_name.toLowerCase().includes(q)),
+      );
+    }
+    return list;
+  }, [products, lineType, replacementDebt, productSearch]);
 
   // ===== Validation: requested qty must fit on the truck + within replacement debt =====
   const selectedPkg = selected && packageId ? selected.packages.find((x) => x.id === packageId) ?? null : null;
@@ -55,7 +67,7 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
     ? calcBaseQty(parsedQty, selectedPkg ? { contains_qty: selectedPkg.contains_qty } : null)
     : 0;
 
-  const enforceTruck = selected && truckStock && (lineType === "sale" || lineType === "replacement_out");
+  const enforceTruck = selected && truckStock && (lineType === "sale" || lineType === "replacement_out" || lineType === "bonus");
   const truckRemaining = enforceTruck ? (truckStock!.get(selected!.id) ?? 0) : Infinity;
   const exceedsTruck   = enforceTruck && requestedBaseQty > truckRemaining;
 
@@ -93,13 +105,15 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
     setSelected(null);
     setPackageId(null);
     setQtyText("1");
+    setProductSearch("");
     onClose();
   }
 
   const title =
-    lineType === "sale"            ? "اختر منتج للبيع" :
-    lineType === "return_in"       ? "اختر منتج تالف/مرتجع" :
-                                     "اختر منتج للبدل";
+    lineType === "sale"             ? "اختر منتج للبيع" :
+    lineType === "return_in"        ? "اختر منتج تالف/مرتجع" :
+    lineType === "bonus"            ? "اختر منتج للبونص (مجاناً)" :
+                                      "اختر منتج للبدل";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-end" onClick={onClose}>
@@ -113,13 +127,30 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
         </div>
 
         {!selected ? (
+          <>
+            <div className="mb-3 relative">
+              <Search size={14} className="absolute top-1/2 -translate-y-1/2 start-3 text-muted pointer-events-none" />
+              <input
+                type="search"
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="ابحث عن منتج أو عبوة..."
+                className="w-full ps-8 pe-8 py-2 rounded-xl border border-border bg-white text-sm font-cairo focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
+              />
+              {productSearch && (
+                <button type="button" onClick={() => setProductSearch("")} className="absolute top-1/2 -translate-y-1/2 end-3 text-muted" aria-label="مسح">
+                  <XIcon size={14} />
+                </button>
+              )}
+            </div>
           <ul className="space-y-2">
             {filteredProducts.length === 0 ? (
-              <li className="text-center text-muted text-xs py-8 font-cairo">لا توجد منتجات</li>
+              <li className="text-center text-muted text-xs py-8 font-cairo">{productSearch ? "لا توجد نتائج" : "لا توجد منتجات"}</li>
             ) : (
               filteredProducts.map((p) => {
                 const debtUnits = replacementDebt?.get(p.id);
-                const showTruck = (lineType === "sale" || lineType === "replacement_out") && truckStock;
+                const showTruck = (lineType === "sale" || lineType === "replacement_out" || lineType === "bonus") && truckStock;
                 const stockUnits = showTruck ? (truckStock.get(p.id) ?? 0) : null;
                 const outOfStock = showTruck && stockUnits !== null && stockUnits <= 0;
                 return (
@@ -152,6 +183,7 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
               })
             )}
           </ul>
+          </>
         ) : (
           <div>
             <button
@@ -161,7 +193,7 @@ export function ProductPackagePicker({ open, onClose, onPick, lineType, products
               ← اختر منتج آخر
             </button>
             <h4 className="font-cairo font-bold text-forest text-sm mb-1">{selected.name_ar}</h4>
-            {(lineType === "sale" || lineType === "replacement_out") && truckStock && (
+            {(lineType === "sale" || lineType === "replacement_out" || lineType === "bonus") && truckStock && (
               <div className={`text-[11px] font-cairo mb-2 ${
                 (truckStock.get(selected.id) ?? 0) <= 0 ? "text-danger font-bold" :
                 (truckStock.get(selected.id) ?? 0) < 5  ? "text-warn font-bold" :

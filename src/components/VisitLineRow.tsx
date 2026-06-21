@@ -14,12 +14,14 @@ const TYPE_BORDER = {
   sale:             "border-r-primary",
   return_in:        "border-r-warn",
   replacement_out:  "border-r-primary-dk",
+  bonus:            "border-r-info",
 } as const;
 
 const TYPE_BADGE = {
   sale:             { ar: "+ بيع",     cls: "text-primary" },
   return_in:        { ar: "↩ مرتجع",   cls: "text-warn" },
   replacement_out:  { ar: "🔄 بدل",   cls: "text-primary-dk" },
+  bonus:            { ar: "🎁 بونص",   cls: "text-info" },
 } as const;
 
 export function VisitLineRow({ line, productName, productUnit, packageName, onRemove }: Props) {
@@ -42,12 +44,18 @@ export function VisitLineRow({ line, productName, productUnit, packageName, onRe
             ? ` · ${formatCurrency(line.unit_price)} لكل وحدة`
             : line.line_type === "replacement_out"
             ? " · بدل (تسوية دين سابق)"
+            : line.line_type === "bonus"
+            ? " · بونص (مجاناً للزبون)"
             : ""}
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0 ms-2">
-        <span className={`font-cairo font-bold text-sm ${line.line_type === "sale" ? "text-ink" : "text-primary-dk"}`}>
-          {subtotalText}
+        <span className={`font-cairo font-bold text-sm ${
+          line.line_type === "sale" ? "text-ink" :
+          line.line_type === "bonus" ? "text-info" :
+          "text-primary-dk"
+        }`}>
+          {line.line_type === "bonus" ? "🎁 مجاناً" : subtotalText}
         </span>
         <button onClick={onRemove} className="text-muted hover:text-danger">
           <X size={14} />

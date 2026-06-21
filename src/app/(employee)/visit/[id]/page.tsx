@@ -40,7 +40,7 @@ export default async function VisitReceipt({ params }: { params: Promise<{ id: s
 
   type Line = NonNullable<typeof visit.visit_lines>[number];
   const lines = (visit.visit_lines as Line[]).map((l) => ({
-    line_type:        l.line_type as "sale" | "return_in" | "replacement_out",
+    line_type:        l.line_type as "sale" | "return_in" | "replacement_out" | "bonus",
     qty:              Number(l.qty),
     base_qty:         Number(l.base_qty),
     unit_price:       l.unit_price === null ? null : Number(l.unit_price),

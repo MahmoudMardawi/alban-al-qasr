@@ -1,4 +1,4 @@
-export type LineType = "sale" | "replacement_out" | "return_in";
+export type LineType = "sale" | "replacement_out" | "return_in" | "bonus";
 
 export interface DraftLine {
   product_id: string;
@@ -15,6 +15,7 @@ export function calcBaseQty(qty: number, pkg: { contains_qty: number } | null): 
 }
 
 export function calcLineSubtotal(line: Pick<DraftLine, "line_type" | "qty" | "unit_price">): number {
+  // Bonus = free gift; doesn't contribute to total. Returns/replacements also 0.
   if (line.line_type !== "sale") return 0;
   return line.qty * (line.unit_price ?? 0);
 }

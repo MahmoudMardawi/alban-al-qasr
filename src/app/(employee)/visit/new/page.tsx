@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useTransition, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Plus, RotateCcw, RefreshCw } from "lucide-react";
+import { ArrowRight, Plus, RotateCcw, RefreshCw, Gift } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { calcVisitTotal, type DraftLine } from "@/lib/ledgers";
 import { formatCurrency, type Unit } from "@/lib/format";
@@ -165,7 +165,7 @@ function NewVisitContent() {
   const effectiveTruckStock = useMemo(() => {
     const m = new Map(baseTruckStock);
     for (const l of lines) {
-      if (l.line_type === "sale" || l.line_type === "replacement_out") {
+      if (l.line_type === "sale" || l.line_type === "replacement_out" || l.line_type === "bonus") {
         m.set(l.product_id, (m.get(l.product_id) ?? 0) - l.base_qty);
       }
     }
@@ -280,26 +280,35 @@ function NewVisitContent() {
         </div>
       )}
 
-      <div className="px-4 pt-3 grid grid-cols-3 gap-2">
+      <div className="px-4 pt-3 grid grid-cols-2 gap-2">
         <button
           onClick={() => openPicker("sale")}
-          className="bg-primary text-white rounded-xl p-3 font-cairo font-bold text-xs shadow-sm flex flex-col items-center gap-1"
+          className="bg-primary text-white rounded-xl p-3 font-cairo font-bold text-xs shadow-sm flex items-center justify-center gap-1.5"
         >
-          <Plus size={20} />
+          <Plus size={18} />
           <span>بيع جديد</span>
         </button>
         <button
-          onClick={() => openPicker("return_in")}
-          className="bg-white text-warn border border-orange-200 rounded-xl p-3 font-cairo font-bold text-xs flex flex-col items-center gap-1"
+          onClick={() => openPicker("bonus")}
+          className="bg-info text-white rounded-xl p-3 font-cairo font-bold text-xs shadow-sm flex items-center justify-center gap-1.5"
         >
-          <RotateCcw size={20} />
+          <Gift size={18} />
+          <span>بونص (مجاناً)</span>
+        </button>
+      </div>
+      <div className="px-4 pt-2 grid grid-cols-2 gap-2">
+        <button
+          onClick={() => openPicker("return_in")}
+          className="bg-white text-warn border border-orange-200 rounded-xl p-2.5 font-cairo font-bold text-xs flex items-center justify-center gap-1.5"
+        >
+          <RotateCcw size={16} />
           <span>مرتجع تالف</span>
         </button>
         <button
           onClick={() => openPicker("replacement_out")}
-          className="bg-white text-primary-dk border border-border rounded-xl p-3 font-cairo font-bold text-xs flex flex-col items-center gap-1"
+          className="bg-white text-primary-dk border border-border rounded-xl p-2.5 font-cairo font-bold text-xs flex items-center justify-center gap-1.5"
         >
-          <RefreshCw size={20} />
+          <RefreshCw size={16} />
           <span>بدل</span>
         </button>
       </div>

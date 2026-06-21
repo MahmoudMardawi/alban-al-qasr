@@ -1,7 +1,7 @@
 import { formatCurrency, formatQty, formatDateShort, formatInvoiceNo, type Unit } from "@/lib/format";
 
 interface ReceiptLine {
-  line_type: "sale" | "return_in" | "replacement_out";
+  line_type: "sale" | "return_in" | "replacement_out" | "bonus";
   qty: number;
   base_qty: number;
   unit_price: number | null;
@@ -23,12 +23,14 @@ interface ReceiptData {
 
 const SECTION = {
   sale:             { title: "🛒 المبيعات",          border: "border-r-primary",    text: "text-primary" },
+  bonus:            { title: "🎁 البونص (مجاناً)",    border: "border-r-info",       text: "text-info" },
   replacement_out:  { title: "🔄 البدل (بدون مقابل)", border: "border-r-primary-dk", text: "text-primary-dk" },
   return_in:        { title: "↩ المرتجع التالف",     border: "border-r-warn",       text: "text-warn" },
 } as const;
 
 export function ReceiptCard({ data }: { data: ReceiptData }) {
   const sales         = data.lines.filter((l) => l.line_type === "sale");
+  const bonuses       = data.lines.filter((l) => l.line_type === "bonus");
   const replacements  = data.lines.filter((l) => l.line_type === "replacement_out");
   const returns       = data.lines.filter((l) => l.line_type === "return_in");
   const total         = sales.reduce((s, l) => s + l.qty * (l.unit_price ?? 0), 0);
@@ -61,7 +63,11 @@ export function ReceiptCard({ data }: { data: ReceiptData }) {
                 </div>
               </div>
               <div className="font-cairo font-bold text-sm shrink-0 ms-2">
-                {l.line_type === "sale" ? formatCurrency(l.qty * (l.unit_price ?? 0)) : "بدون مقابل"}
+                {l.line_type === "sale"
+                  ? formatCurrency(l.qty * (l.unit_price ?? 0))
+                  : l.line_type === "bonus"
+                  ? "🎁 مجاناً"
+                  : "بدون مقابل"}
               </div>
             </li>
           ))}
@@ -100,6 +106,7 @@ export function ReceiptCard({ data }: { data: ReceiptData }) {
 
       <div className="p-4">
         <Section kind="sale"            items={sales} />
+        <Section kind="bonus"           items={bonuses} />
         <Section kind="replacement_out" items={replacements} />
         <Section kind="return_in"       items={returns} />
 
